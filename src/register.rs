@@ -28,6 +28,10 @@ impl Register {
         else { panic!("Invalid address for register"); }
     }
 
+    pub fn from_u15(u: u15) -> Register {
+        Register::new(u.0)
+    }
+
     pub fn as_address(&self) -> Address {
         return match *self {
             Register::R0 => Address::new(REGISTER_0),
