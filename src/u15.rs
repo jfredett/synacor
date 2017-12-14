@@ -20,8 +20,9 @@ impl u15 {
 impl Not for u15 {
     type Output = u15;
 
+    // mask out the high bit so it's a 15b value.
     #[inline]
-    fn not(self) -> u15 { u15(!self.0) }
+    fn not(self) -> u15 { u15((!self.0) % MODULUS) }
 }
 
 /// implements binop traits for u15
@@ -153,6 +154,9 @@ mod tests {
         fn min_val() { assert_eq!(u15::min_value(), u15(0)); }
         #[test]
         fn max_val() { assert_eq!(u15::max_value(), u15(MODULUS - 1)); }
+
+        #[test]
+        fn not_is_15b() { assert_eq!(!u15(0), u15(MODULUS - 1)); }
     }
 
     mod basics {
@@ -189,7 +193,7 @@ mod tests {
 
         #[test]
         fn not() {
-            assert_eq!(!u15(16), u15(!16));
+            assert_eq!(!u15(16), u15(32751));
         }
 
         #[test]
