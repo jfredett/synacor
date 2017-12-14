@@ -1,11 +1,11 @@
 use std::ops::*;
+use constants::*;
 
 /// a type representing the weird 15b modular number system.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[allow(non_camel_case_types)]
-struct u15(u16);
+pub struct u15(pub u16);
 
-const MODULUS : u16 = 32768;
 
 impl u15 {
     pub const fn min_value() -> u15 {

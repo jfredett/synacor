@@ -2,6 +2,8 @@ use std::str::FromStr;
 use std::num::ParseIntError;
 
 use register::Register;
+use u15::u15;
+use constants::*;
 
 /// Represents a legal address in the VM
 ///
@@ -43,7 +45,7 @@ impl Address {
     }
 
     pub fn is_valid(&self) -> bool {
-        return self.0 < 32776;
+        return self.0 <= REGISTER_7;
     }
 
     pub fn is_invalid(&self) -> bool {
@@ -51,7 +53,7 @@ impl Address {
     }
 
     pub fn is_register(&self) -> bool {
-        return 32768 <= self.0 && self.0 <= 32775;
+        return REGISTER_0 <= self.0 && self.0 <= REGISTER_7;
     }
 
     pub fn is_value(&self) -> bool {
@@ -69,6 +71,7 @@ impl Address {
     }
 
 	pub fn value(&self) -> u16 { self.0 }
+    pub fn to_u15(&self) -> u15 { u15(self.value()) }
 }
 
 

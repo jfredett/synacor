@@ -1,6 +1,7 @@
 use address::Address;
+use constants::*;
+use u15::u15;
 
-/// A register in the VM
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Register {
     R0,
@@ -15,7 +16,7 @@ pub enum Register {
 
 impl Register {
     pub fn new(u: u16) -> Register {
-        let r_addr = u - 32768;
+        let r_addr = u - REGISTER_0;
         if r_addr == 0 { return Register::R0; }
         else if r_addr == 1 { return Register::R1; }
         else if r_addr == 2 { return Register::R2; }
@@ -29,15 +30,19 @@ impl Register {
 
     pub fn as_address(&self) -> Address {
         return match *self {
-            Register::R0 => Address::new(32768),
-            Register::R1 => Address::new(32769),
-            Register::R2 => Address::new(32770),
-            Register::R3 => Address::new(32771),
-            Register::R4 => Address::new(32772),
-            Register::R5 => Address::new(32773),
-            Register::R6 => Address::new(32774),
-            Register::R7 => Address::new(32775)
+            Register::R0 => Address::new(REGISTER_0),
+            Register::R1 => Address::new(REGISTER_1),
+            Register::R2 => Address::new(REGISTER_2),
+            Register::R3 => Address::new(REGISTER_3),
+            Register::R4 => Address::new(REGISTER_4),
+            Register::R5 => Address::new(REGISTER_5),
+            Register::R6 => Address::new(REGISTER_6),
+            Register::R7 => Address::new(REGISTER_7)
         }
+    }
+
+    pub fn to_u15(&self) -> u15 {
+        u15(self.as_address().value())
     }
 }
 
