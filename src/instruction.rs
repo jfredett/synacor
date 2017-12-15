@@ -73,7 +73,7 @@ impl Instruction {
             Instruction::POP(r)                       => vec![3, r.to_u16()],
             Instruction::EQ(r, a, b)        => vec![4, r.to_u16(), a.to_u16(), b.to_u16()],
             Instruction::GT(r, a, b)   => vec![5, r.to_u16(), a.to_u16(), b.to_u16()],
-            //Instruction::JMP(a)                => vec![6, a.to_u16()],
+            Instruction::JMP(a)                => vec![6, a.to_u16()],
             //Instruction::JT(a,  b)         => vec![7, a.to_u16(), b.to_u16()],
             //Instruction::JF(a, b)          => vec![8, a.to_u16(), b.to_u16()],
             //Instruction::ADD(r, a, b)  => vec![9, r.to_u16(), a.to_u16(), b.to_u16()],
@@ -102,7 +102,7 @@ impl Instruction {
             3  => Instruction::POP(Register::new(seq[1])),
             4  => Instruction::EQ(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
             5  => Instruction::GT(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
-            6  => { Instruction::NOOP },
+            6  => Instruction::JMP(Argument::new(seq[1])),
             7  => { Instruction::NOOP },
             8  => { Instruction::NOOP },
             9  => { Instruction::NOOP },
@@ -244,6 +244,19 @@ mod tests {
         mod jmp {
             use super::*;
 
+            #[test]
+            fn reg() {
+                let p = Instruction::JMP(Argument::new(123));
+                let h = vec![6, 123];
+                assert_eq!(p.to_u16_sequence(), h);
+            }
+
+            #[test]
+            fn lit() {
+                let p = Instruction::JMP(Argument::new(REGISTER_1));
+                let h = vec![6, REGISTER_1];
+                assert_eq!(p.to_u16_sequence(), h);
+            }
         }
 
         mod jt {
@@ -443,6 +456,19 @@ mod tests {
         mod jmp {
             use super::*;
 
+            #[test]
+            fn reg() {
+                let p = Instruction::JMP(Argument::new(123));
+                let h = Instruction::from_u16_sequence(&vec![6, 123]);
+                assert_eq!(p, h);
+            }
+
+            #[test]
+            fn lit() {
+                let p = Instruction::JMP(Argument::new(REGISTER_1));
+                let h = Instruction::from_u16_sequence(&vec![6, REGISTER_1]);
+                assert_eq!(p, h);
+            }
         }
 
         mod jt {
