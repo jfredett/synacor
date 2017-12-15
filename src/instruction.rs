@@ -33,6 +33,35 @@ enum Instruction {
 }
 
 impl Instruction {
+
+    /// the number of arguments a given opcode takes
+    pub fn arg_count(self) -> u8 {
+        match self {
+            Instruction::HALT          => 0,
+            Instruction::SET(r, a)     => 2,
+            Instruction::PUSH(a)       => 1,
+            Instruction::POP(r)        => 1,
+            Instruction::EQ(r, a, b)   => 3,
+            Instruction::GT(r, a, b)   => 3,
+            Instruction::JMP(a)        => 1,
+            Instruction::JT(a,  b)     => 2,
+            Instruction::JF(a, b)      => 2,
+            Instruction::ADD(r, a, b)  => 3,
+            Instruction::MULT(r, a, b) => 3,
+            Instruction::MOD(r, a, b)  => 3,
+            Instruction::AND(r, a, b)  => 3,
+            Instruction::OR(r, a, b)   => 3,
+            Instruction::NOT(r, a)     => 2,
+            Instruction::RMEM(r, a)    => 2,
+            Instruction::WMEM(a, arg)  => 2,
+            Instruction::CALL(a)       => 1,
+            Instruction::RET           => 0,
+            Instruction::OUT(u)        => 1,
+            Instruction::IN(a)         => 1,
+            Instruction::NOOP          => 0
+        }
+    }
+
     pub fn to_u16_sequence(self) -> Vec<u16> {
         match self {
             Instruction::HALT                         => vec![0],
