@@ -62,13 +62,15 @@ impl Instruction {
         }
     }
 
+
+    /// given an Instruction, produce it's opcode equivalent
     pub fn to_u16_sequence(self) -> Vec<u16> {
         match self {
             Instruction::HALT                         => vec![0],
             Instruction::SET(r, a)                    => vec![1, r.to_u16(), a.to_u16()],
             Instruction::PUSH(a)                      => vec![2, a.to_u16()],
             Instruction::POP(r)                       => vec![3, r.to_u16()],
-            //&Instruction::EQ(ref r, ref a, ref b)   => vec![4, r.to_u16(), a.to_u16(), b.to_u16()],
+            Instruction::EQ(r, a, b)        => vec![4, r.to_u16(), a.to_u16(), b.to_u16()],
             //&Instruction::GT(ref r, ref a, ref b)   => vec![5, r.to_u16(), a.to_u16(), b.to_u16()],
             //&Instruction::JMP(ref a)                => vec![6, a.to_u16()],
             //&Instruction::JT(ref a, ref  b)         => vec![7, a.to_u16(), b.to_u16()],
@@ -97,7 +99,7 @@ impl Instruction {
             1  => Instruction::SET(Register::new(seq[1]), Argument::new(seq[2])),
             2  => Instruction::PUSH(Argument::new(seq[1])),
             3  => Instruction::POP(Register::new(seq[1])),
-            4  => { Instruction::NOOP },
+            4  => Instruction::EQ(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
             5  => { Instruction::NOOP },
             6  => { Instruction::NOOP },
             7  => { Instruction::NOOP },
