@@ -11,7 +11,7 @@ enum Instruction {
     HALT,
     SET(Register, Argument),
     PUSH(Argument),
-    POP(Register),
+    POP(Argument),
     EQ(Register, Argument, Argument),
     GT(Register, Argument, Argument),
     JMP(Argument),
@@ -35,10 +35,10 @@ enum Instruction {
 impl Instruction {
     pub fn to_u16_sequence(self) -> Vec<u16> {
         match self {
-            Instruction::HALT                      => vec![0],
-            Instruction::SET(r, a)       =>  vec![1, r.to_u16(), a.to_u16()],
-            Instruction::PUSH(a)               => vec![2, a.to_u16()],
-            //&Instruction::POP(ref r)                => vec![3, r.to_u16().to_owned()],
+            Instruction::HALT                         => vec![0],
+            Instruction::SET(r, a)                    => vec![1, r.to_u16(), a.to_u16()],
+            Instruction::PUSH(a)                      => vec![2, a.to_u16()],
+            Instruction::POP(r)                       => vec![3, r.to_u16()],
             //&Instruction::EQ(ref r, ref a, ref b)   => vec![4, r.to_u16(), a.to_u16(), b.to_u16()],
             //&Instruction::GT(ref r, ref a, ref b)   => vec![5, r.to_u16(), a.to_u16(), b.to_u16()],
             //&Instruction::JMP(ref a)                => vec![6, a.to_u16()],
@@ -51,33 +51,29 @@ impl Instruction {
             //&Instruction::OR(ref r, ref a, ref b)   => vec![13, r.to_u16(), a.to_u16(), b.to_u16()],
             //&Instruction::NOT(ref r, ref a)         => vec![14, r.to_u16(), a.to_u16()],
             //&Instruction::RMEM(ref r, ref a)        => vec![15, r.to_u16(), a.to_u16()],
-            //&Instruction::WMEM(a, arg)      => vec![16, a.to_u16(), arg.to_u16()],
+            //&Instruction::WMEM(a, arg)              => vec![16, a.to_u16(), arg.to_u16()],
             //&Instruction::CALL(ref a)               => vec![17, a.to_u16()],
             //&Instruction::RET                       => vec![18],
             //&Instruction::OUT(ref u)                => vec![19, u.0],
             //&Instruction::IN(ref a)                 => vec![20, a.to_u16()],
             //&Instruction::NOOP                      => vec![21],
-            _ => vec![21]
+            _                                         => vec![21]
         }
     }
 
     pub fn from_u16_sequence(seq: &Vec<u16>) -> Instruction {
         let opcode = seq[0];
         match opcode {
-            0 => Instruction::HALT,
-            1 => {
-                let r = seq[1];
-                let arg = seq[2];
-                Instruction::SET(Register::new(r), Argument::new(arg))
-            },
-            2 => { Instruction::PUSH(Argument::new(seq[1]))},
-            3 => { Instruction::NOOP },
-            4 => { Instruction::NOOP },
-            5 => { Instruction::NOOP },
-            6 => { Instruction::NOOP },
-            7 => { Instruction::NOOP },
-            8 => { Instruction::NOOP },
-            9 => { Instruction::NOOP },
+            0  => Instruction::HALT,
+            1  => Instruction::SET(Register::new(seq[1]), Argument::new(seq[2])),
+            2  => Instruction::PUSH(Argument::new(seq[1])),
+            3  => Instruction::POP(Argument::new(seq[1])),
+            4  => { Instruction::NOOP },
+            5  => { Instruction::NOOP },
+            6  => { Instruction::NOOP },
+            7  => { Instruction::NOOP },
+            8  => { Instruction::NOOP },
+            9  => { Instruction::NOOP },
             10 => { Instruction::NOOP },
             11 => { Instruction::NOOP },
             12 => { Instruction::NOOP },
@@ -90,7 +86,7 @@ impl Instruction {
             19 => { Instruction::NOOP },
             20 => { Instruction::NOOP },
             21 => { Instruction::NOOP },
-            _ => { Instruction::NOOP }
+            _  => { Instruction::NOOP }
         }
     }
 }
@@ -131,6 +127,18 @@ mod tests {
             let s = Instruction::PUSH(Argument::new(REGISTER_2));
             assert_eq!(s.to_u16_sequence(), vec![2, 32770]);
        }
+
+       #[test]
+       fn pop_lit() {
+            let s = Instruction::POP(Argument::new(123));
+            assert_eq!(s.to_u16_sequence(), vec![3, 123]);
+       }
+
+       #[test]
+       fn pop_reg() {
+            let s = Instruction::POP(Argument::new(REGISTER_2));
+            assert_eq!(s.to_u16_sequence(), vec![3, 32770]);
+       }
    }
 
    mod from_u16_sequence {
@@ -167,6 +175,20 @@ mod tests {
        fn push_reg() {
             let p = Instruction::PUSH(Argument::new(REGISTER_1));
             let h = Instruction::from_u16_sequence(&vec![2, 32769]);
+            assert_eq!(p, h);
+       }
+
+       #[test]
+       fn pop_lit() {
+            let p = Instruction::POP(Argument::new(123));
+            let h = Instruction::from_u16_sequence(&vec![3, 123]);
+            assert_eq!(p, h);
+       }
+
+       #[test]
+       fn pop_reg() {
+            let p = Instruction::POP(Argument::new(REGISTER_1));
+            let h = Instruction::from_u16_sequence(&vec![3, 32769]);
             assert_eq!(p, h);
        }
    }
