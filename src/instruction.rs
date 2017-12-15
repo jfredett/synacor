@@ -11,7 +11,7 @@ enum Instruction {
     HALT,
     SET(Register, Argument),
     PUSH(Argument),
-    POP(Argument),
+    POP(Register),
     EQ(Register, Argument, Argument),
     GT(Register, Argument, Argument),
     JMP(Argument),
@@ -96,7 +96,7 @@ impl Instruction {
             0  => Instruction::HALT,
             1  => Instruction::SET(Register::new(seq[1]), Argument::new(seq[2])),
             2  => Instruction::PUSH(Argument::new(seq[1])),
-            3  => Instruction::POP(Argument::new(seq[1])),
+            3  => Instruction::POP(Register::new(seq[1])),
             4  => { Instruction::NOOP },
             5  => { Instruction::NOOP },
             6  => { Instruction::NOOP },
@@ -122,103 +122,347 @@ impl Instruction {
 
 #[cfg(test)]
 mod tests {
-   use super::*;
+    use super::*;
 
-   mod to_u16_sequence {
-       use super::*;
+    mod to_u16_sequence {
+        use super::*;
 
-       #[test]
-       fn halt() {
-            let h = Instruction::HALT;
-            assert_eq!(h.to_u16_sequence(), vec![0]);
-       }
+        mod halt {
+            use super::*;
+            #[test]
+            fn halt() {
+                let h = Instruction::HALT;
+                assert_eq!(h.to_u16_sequence(), vec![0]);
+            }
 
-       #[test]
-       fn set_literal() {
-            let s = Instruction::SET(Register::new(REGISTER_0), Argument::new(123));
-            assert_eq!(s.to_u16_sequence(), vec![1, 32768, 123]);
-       }
+        }
 
-       #[test]
-       fn set_register() {
-            let s = Instruction::SET(Register::new(REGISTER_0), Argument::new(REGISTER_1));
-            assert_eq!(s.to_u16_sequence(), vec![1, 32768, 32769]);
-       }
+        mod set {
+            use super::*;
+            #[test]
+            fn lit() {
+                let s = Instruction::SET(Register::new(REGISTER_0), Argument::new(123));
+                assert_eq!(s.to_u16_sequence(), vec![1, REGISTER_0, 123]);
+            }
 
-       #[test]
-       fn push_lit() {
-            let s = Instruction::PUSH(Argument::new(123));
-            assert_eq!(s.to_u16_sequence(), vec![2, 123]);
-       }
+            #[test]
+            fn reg() {
+                let s = Instruction::SET(Register::new(REGISTER_0), Argument::new(REGISTER_1));
+                assert_eq!(s.to_u16_sequence(), vec![1, REGISTER_0, REGISTER_1]);
+            }
+        }
 
-       #[test]
-       fn push_reg() {
-            let s = Instruction::PUSH(Argument::new(REGISTER_2));
-            assert_eq!(s.to_u16_sequence(), vec![2, 32770]);
-       }
+        mod push {
+            use super::*;
+            #[test]
+            fn lit() {
+                let s = Instruction::PUSH(Argument::new(123));
+                assert_eq!(s.to_u16_sequence(), vec![2, 123]);
+            }
 
-       #[test]
-       fn pop_lit() {
-            let s = Instruction::POP(Argument::new(123));
-            assert_eq!(s.to_u16_sequence(), vec![3, 123]);
-       }
+            #[test]
+            fn reg() {
+                let s = Instruction::PUSH(Argument::new(REGISTER_2));
+                assert_eq!(s.to_u16_sequence(), vec![2, REGISTER_2]);
+            }
+        }
 
-       #[test]
-       fn pop_reg() {
-            let s = Instruction::POP(Argument::new(REGISTER_2));
-            assert_eq!(s.to_u16_sequence(), vec![3, 32770]);
-       }
-   }
+        mod pop {
+            use super::*;
+            #[test]
+            fn reg() {
+                let s = Instruction::POP(Register::new(REGISTER_2));
+                assert_eq!(s.to_u16_sequence(), vec![3, REGISTER_2]);
+            }
+        }
 
-   mod from_u16_sequence {
-       use super::*;
+        mod eq {
+            use super::*;
+            #[test]
+            fn lit_lit() {
+                let e = Instruction::EQ(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
+                let h = vec![4, REGISTER_6, 123, 456];
+                assert_eq!(e.to_u16_sequence(), h);
+            }
 
-       #[test]
-       fn halt() {
-            let h = Instruction::from_u16_sequence(&vec![0]);
-            assert_eq!(Instruction::HALT, h);
-       }
+            #[test]
+            fn lit_reg() {
+                let e = Instruction::EQ(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
+                let h = vec![4, REGISTER_6, 123, REGISTER_7];
+                assert_eq!(e.to_u16_sequence(), h);
+            }
 
-       #[test]
-       fn set_lit() {
-            let s = Instruction::SET(Register::new(REGISTER_0), Argument::new(123));
-            let h = Instruction::from_u16_sequence(&vec![1, 32768, 123]);
-            assert_eq!(s, h);
-       }
+            #[test]
+            fn reg_lit() {
+                let e = Instruction::EQ(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
+                let h = vec![4, REGISTER_6, REGISTER_6, 456];
+                assert_eq!(e.to_u16_sequence(), h);
+            }
 
-       #[test]
-       fn set_reg() {
-            let s = Instruction::SET(Register::new(REGISTER_0), Argument::new(REGISTER_1));
-            let h = Instruction::from_u16_sequence(&vec![1, 32768, 32769]);
-            assert_eq!(s, h);
-       }
+            #[test]
+            fn reg_reg() {
+                let e = Instruction::EQ(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
+                let h = vec![4, REGISTER_6, REGISTER_6, REGISTER_7];
+                assert_eq!(e.to_u16_sequence(), h);
+            }
+        }
 
-       #[test]
-       fn push_lit() {
-            let p = Instruction::PUSH(Argument::new(123));
-            let h = Instruction::from_u16_sequence(&vec![2, 123]);
-            assert_eq!(p, h);
-       }
+        mod gt {
+            use super::*;
 
-       #[test]
-       fn push_reg() {
-            let p = Instruction::PUSH(Argument::new(REGISTER_1));
-            let h = Instruction::from_u16_sequence(&vec![2, 32769]);
-            assert_eq!(p, h);
-       }
+        }
 
-       #[test]
-       fn pop_lit() {
-            let p = Instruction::POP(Argument::new(123));
-            let h = Instruction::from_u16_sequence(&vec![3, 123]);
-            assert_eq!(p, h);
-       }
+        mod jmp {
+            use super::*;
 
-       #[test]
-       fn pop_reg() {
-            let p = Instruction::POP(Argument::new(REGISTER_1));
-            let h = Instruction::from_u16_sequence(&vec![3, 32769]);
-            assert_eq!(p, h);
-       }
-   }
+        }
+
+        mod jt {
+            use super::*;
+
+        }
+
+        mod jf {
+            use super::*;
+
+        }
+
+        mod add {
+            use super::*;
+
+        }
+
+        mod mult {
+            use super::*;
+
+        }
+
+        mod modulo { // used full name to avoid collision
+            use super::*;
+
+        }
+
+        mod and {
+            use super::*;
+
+        }
+
+        mod or {
+            use super::*;
+
+        }
+
+        mod not {
+            use super::*;
+
+        }
+
+        mod rmem {
+            use super::*;
+
+        }
+
+        mod wmem {
+            use super::*;
+
+        }
+
+        mod call {
+            use super::*;
+
+        }
+
+        mod ret {
+            use super::*;
+
+        }
+
+        mod out {
+            use super::*;
+
+        }
+
+        mod in_val { // to avoid reserved word
+            use super::*;
+
+        }
+
+        mod noop {
+            use super::*;
+
+        }
+    }
+
+    mod from_u16_sequence {
+        use super::*;
+
+        mod halt {
+            use super::*;
+            #[test]
+            fn halt() {
+                let h = Instruction::from_u16_sequence(&vec![0]);
+                assert_eq!(Instruction::HALT, h);
+            }
+        }
+
+        mod set {
+            use super::*;
+            #[test]
+            fn lit() {
+                let s = Instruction::SET(Register::new(REGISTER_0), Argument::new(123));
+                let h = Instruction::from_u16_sequence(&vec![1, REGISTER_0, 123]);
+                assert_eq!(s, h);
+            }
+
+            #[test]
+            fn reg() {
+                let s = Instruction::SET(Register::new(REGISTER_0), Argument::new(REGISTER_1));
+                let h = Instruction::from_u16_sequence(&vec![1, REGISTER_0, REGISTER_1]);
+                assert_eq!(s, h);
+            }
+        }
+
+        mod push {
+            use super::*;
+            #[test]
+            fn lit() {
+                let p = Instruction::PUSH(Argument::new(123));
+                let h = Instruction::from_u16_sequence(&vec![2, 123]);
+                assert_eq!(p, h);
+            }
+
+            #[test]
+            fn reg() {
+                let p = Instruction::PUSH(Argument::new(REGISTER_1));
+                let h = Instruction::from_u16_sequence(&vec![2, REGISTER_1]);
+                assert_eq!(p, h);
+            }
+        }
+
+        mod pop {
+            use super::*;
+            #[test]
+            fn reg() {
+                let p = Instruction::POP(Register::new(REGISTER_1));
+                let h = Instruction::from_u16_sequence(&vec![3, REGISTER_1]);
+                assert_eq!(p, h);
+            }
+        }
+
+        mod eq {
+            use super::*;
+            #[test]
+            fn lit_lit() {
+                let e = Instruction::EQ(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
+                let h = Instruction::from_u16_sequence(&vec![4, REGISTER_6, 123, 456]);
+                assert_eq!(e,h);
+            }
+
+            #[test]
+            fn lit_reg() {
+                let e = Instruction::EQ(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
+                let h = Instruction::from_u16_sequence(&vec![4, REGISTER_6, 123, REGISTER_7]);
+                assert_eq!(e,h);
+            }
+
+            #[test]
+            fn reg_lit() {
+                let e = Instruction::EQ(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
+                let h = Instruction::from_u16_sequence(&vec![4, REGISTER_6, REGISTER_6, 456]);
+                assert_eq!(e,h);
+            }
+
+            #[test]
+            fn reg_reg() {
+                let e = Instruction::EQ(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
+                let h = Instruction::from_u16_sequence(&vec![4, REGISTER_6, REGISTER_6, REGISTER_7]);
+                assert_eq!(e,h);
+            }
+        }
+
+        mod gt {
+            use super::*;
+
+        }
+
+        mod jmp {
+            use super::*;
+
+        }
+
+        mod jt {
+            use super::*;
+
+        }
+
+        mod jf {
+            use super::*;
+
+        }
+
+        mod add {
+            use super::*;
+
+        }
+
+        mod mult {
+            use super::*;
+
+        }
+
+        mod modulo { // full name to avoid collision
+            use super::*;
+
+        }
+
+        mod and {
+            use super::*;
+
+        }
+
+        mod or {
+            use super::*;
+
+        }
+
+        mod not {
+            use super::*;
+
+        }
+
+        mod rmem {
+            use super::*;
+
+        }
+
+        mod wmem {
+            use super::*;
+
+        }
+
+        mod call {
+            use super::*;
+
+        }
+
+        mod ret {
+            use super::*;
+
+        }
+
+        mod out {
+            use super::*;
+
+        }
+
+        mod in_val { // to avoid reserved word
+            use super::*;
+
+        }
+
+        mod noop {
+            use super::*;
+
+        }
+    }
 }
