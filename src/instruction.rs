@@ -6,6 +6,7 @@ use argument::Argument;
 use constants::*;
 
 
+/// Represents a machine instruction
 #[derive(Debug, PartialEq, Eq)]
 enum Instruction {
     HALT,
