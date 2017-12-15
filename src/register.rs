@@ -1,6 +1,5 @@
 use address::Address;
 use constants::*;
-use u15::u15;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Register {
@@ -28,10 +27,6 @@ impl Register {
         else { panic!("Invalid address for register"); }
     }
 
-    pub fn from_u15(u: u15) -> Register {
-        Register::new(u.0)
-    }
-
     pub fn as_address(&self) -> Address {
         return match *self {
             Register::R0 => Address::new(REGISTER_0),
@@ -45,8 +40,8 @@ impl Register {
         }
     }
 
-    pub fn to_u15(&self) -> u15 {
-        u15(self.as_address().value())
+    pub fn to_u16(&self) -> u16 {
+        self.as_address().value()
     }
 }
 

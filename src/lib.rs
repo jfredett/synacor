@@ -16,4 +16,6 @@ mod constants {
 pub mod address;
 pub mod register;
 pub mod u15;
+pub mod instruction;
+pub mod argument;
 

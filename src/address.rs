@@ -72,6 +72,7 @@ impl Address {
 
 	pub fn value(&self) -> u16 { self.0 }
     pub fn to_u15(&self) -> u15 { u15(self.value()) }
+    pub fn to_u16(&self) -> u16 { self.value() }
 }
 
 

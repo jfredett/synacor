@@ -1,27 +1,26 @@
 use u15::u15;
 use register::Register;
-use address::Address;
 use constants::*;
 
 #[derive(Debug, PartialEq, Eq)]
-enum Argument {
+pub enum Argument {
     Literal(u15),
     Register(Register)
 }
 
 impl Argument {
-    pub fn to_u15(self) -> u15 {
+    pub fn to_u16(self) -> u16 {
         match self {
-            Argument::Literal(u) => u,
-            Argument::Register(r) => r.to_u15()
+            Argument::Literal(u) => u.0,
+            Argument::Register(r) => r.to_u16()
         }
     }
 
-    pub fn new(u: u15) -> Argument {
-        if u >= u15(REGISTER_0) {
-            return Argument::Register(Register::from_u15(u));
+    pub fn new(u: u16) -> Argument {
+        if u >= REGISTER_0 {
+            return Argument::Register(Register::new(u));
         } else {
-            return Argument::Literal(u);
+            return Argument::Literal(u15(u));
         }
     }
 }
@@ -32,19 +31,19 @@ mod tests {
 
     #[test]
     fn new_lit() {
-        let arg = Argument::new(u15(123));
+        let arg = Argument::new(123);
         assert_eq!(arg, Argument::Literal(u15(123)));
     }
 
     #[test]
     fn new_reg() {
-        let arg = Argument::new(u15(REGISTER_0));
+        let arg = Argument::new(REGISTER_0);
         assert_eq!(arg, Argument::Register(Register::R0));
     }
 
     #[test]
     #[should_panic]
     fn new_panic_on_out_of_range() {
-        Argument::new(u15(REGISTER_7+1));
+        Argument::new(REGISTER_7+1);
     }
 }
