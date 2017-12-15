@@ -72,7 +72,7 @@ impl Instruction {
             Instruction::PUSH(a)                      => vec![2, a.to_u16()],
             Instruction::POP(r)                       => vec![3, r.to_u16()],
             Instruction::EQ(r, a, b)        => vec![4, r.to_u16(), a.to_u16(), b.to_u16()],
-            //Instruction::GT(r, a, b)   => vec![5, r.to_u16(), a.to_u16(), b.to_u16()],
+            Instruction::GT(r, a, b)   => vec![5, r.to_u16(), a.to_u16(), b.to_u16()],
             //Instruction::JMP(a)                => vec![6, a.to_u16()],
             //Instruction::JT(a,  b)         => vec![7, a.to_u16(), b.to_u16()],
             //Instruction::JF(a, b)          => vec![8, a.to_u16(), b.to_u16()],
@@ -101,7 +101,7 @@ impl Instruction {
             2  => Instruction::PUSH(Argument::new(seq[1])),
             3  => Instruction::POP(Register::new(seq[1])),
             4  => Instruction::EQ(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
-            5  => { Instruction::NOOP },
+            5  => Instruction::GT(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
             6  => { Instruction::NOOP },
             7  => { Instruction::NOOP },
             8  => { Instruction::NOOP },
@@ -212,7 +212,33 @@ mod tests {
 
         mod gt {
             use super::*;
+            #[test]
+            fn lit_lit() {
+                let e = Instruction::GT(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
+                let h = vec![5, REGISTER_6, 123, 456];
+                assert_eq!(e.to_u16_sequence(), h);
+            }
 
+            #[test]
+            fn lit_reg() {
+                let e = Instruction::GT(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
+                let h = vec![5, REGISTER_6, 123, REGISTER_7];
+                assert_eq!(e.to_u16_sequence(), h);
+            }
+
+            #[test]
+            fn reg_lit() {
+                let e = Instruction::GT(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
+                let h = vec![5, REGISTER_6, REGISTER_6, 456];
+                assert_eq!(e.to_u16_sequence(), h);
+            }
+
+            #[test]
+            fn reg_reg() {
+                let e = Instruction::GT(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
+                let h = vec![5, REGISTER_6, REGISTER_6, REGISTER_7];
+                assert_eq!(e.to_u16_sequence(), h);
+            }
         }
 
         mod jmp {
@@ -385,7 +411,33 @@ mod tests {
 
         mod gt {
             use super::*;
+            #[test]
+            fn lit_lit() {
+                let e = Instruction::GT(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
+                let h = Instruction::from_u16_sequence(&vec![5, REGISTER_6, 123, 456]);
+                assert_eq!(e,h);
+            }
 
+            #[test]
+            fn lit_reg() {
+                let e = Instruction::GT(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
+                let h = Instruction::from_u16_sequence(&vec![5, REGISTER_6, 123, REGISTER_7]);
+                assert_eq!(e,h);
+            }
+
+            #[test]
+            fn reg_lit() {
+                let e = Instruction::GT(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
+                let h = Instruction::from_u16_sequence(&vec![5, REGISTER_6, REGISTER_6, 456]);
+                assert_eq!(e,h);
+            }
+
+            #[test]
+            fn reg_reg() {
+                let e = Instruction::GT(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
+                let h = Instruction::from_u16_sequence(&vec![5, REGISTER_6, REGISTER_6, REGISTER_7]);
+                assert_eq!(e,h);
+            }
         }
 
         mod jmp {
