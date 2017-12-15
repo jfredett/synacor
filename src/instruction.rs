@@ -123,6 +123,16 @@ impl Instruction {
     }
 }
 
+// impl Display for Instruction
+// ^-- should take an Instruction and produce an nicely formatted ASM-like thing, eg:
+//
+// HALT
+// PUSH R7
+// EQ R1 R7 R8
+// JT 100
+// JF 200
+// etc
+
 #[cfg(test)]
 mod tests {
     use super::*;
