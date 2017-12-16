@@ -85,10 +85,10 @@ impl Instruction {
             //Instruction::RMEM(r, a)    => vec![15, r.to_u16(), a.to_u16()],
             //Instruction::WMEM(a, arg)  => vec![16, a.to_u16(), arg.to_u16()],
             //Instruction::CALL(a)       => vec![17, a.to_u16()],
-            //Instruction::RET           => vec![18],
+            Instruction::RET           => vec![18],
             //Instruction::OUT(u)        => vec![19, u.0],
             //Instruction::IN(a)         => vec![20, a.to_u16()],
-            //Instruction::NOOP          => vec![21],
+            Instruction::NOOP          => vec![21],
             _                            => vec![21]
         }
     }
@@ -114,10 +114,10 @@ impl Instruction {
             15 => { Instruction::NOOP },
             16 => { Instruction::NOOP },
             17 => { Instruction::NOOP },
-            18 => { Instruction::NOOP },
+            18 => Instruction::RET,
             19 => { Instruction::NOOP },
             20 => { Instruction::NOOP },
-            21 => { Instruction::NOOP },
+            21 => Instruction::NOOP,
             _  => { Instruction::NOOP }
         }
     }
@@ -517,6 +517,12 @@ mod tests {
         mod ret {
             use super::*;
 
+            #[test]
+            fn ret() {
+                let h = Instruction::RET;
+                assert_eq!(h.to_u16_sequence(), vec![18]);
+            }
+
         }
 
         mod out {
@@ -532,6 +538,11 @@ mod tests {
         mod noop {
             use super::*;
 
+            #[test]
+            fn noop() {
+                let h = Instruction::NOOP;
+                assert_eq!(h.to_u16_sequence(), vec![21]);
+            }
         }
     }
 
@@ -919,6 +930,11 @@ mod tests {
         mod ret {
             use super::*;
 
+            #[test]
+            fn ret() {
+                let h = Instruction::from_u16_sequence(&vec![18]);
+                assert_eq!(Instruction::RET, h);
+            }
         }
 
         mod out {
@@ -934,6 +950,11 @@ mod tests {
         mod noop {
             use super::*;
 
+            #[test]
+            fn noop() {
+                let h = Instruction::from_u16_sequence(&vec![21]);
+                assert_eq!(Instruction::NOOP, h);
+            }
         }
     }
 }
