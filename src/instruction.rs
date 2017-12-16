@@ -1,4 +1,3 @@
-use u15::u15;
 use register::Register;
 use address::Address;
 use argument::Argument;
@@ -28,7 +27,7 @@ enum Instruction {
     WMEM(Address, Argument),
     CALL(Address),
     RET,
-    OUT(u15),
+    OUT(u8),
     IN(Address),
     NOOP
 }
@@ -84,12 +83,11 @@ impl Instruction {
             Instruction::NOT(r, a)      => vec![14, r.to_u16(), a.to_u16()],
             Instruction::RMEM(r, a)     => vec![15, r.to_u16(), a.to_u16()],
             Instruction::WMEM(a, arg)   => vec![16, a.to_u16(), arg.to_u16()],
-            //Instruction::CALL(a)        => vec![17, a.to_u16()],
+            Instruction::CALL(a)        => vec![17, a.to_u16()],
             Instruction::RET            => vec![18],
-            //Instruction::OUT(u)         => vec![19, u.0],
-            //Instruction::IN(a)          => vec![20, a.to_u16()],
-            Instruction::NOOP           => vec![21],
-            _                           => vec![21]
+            Instruction::OUT(u)         => vec![19, u as u16],
+            Instruction::IN(a)          => vec![20, a.to_u16()],
+            Instruction::NOOP           => vec![21]
         }
     }
 
@@ -115,12 +113,15 @@ impl Instruction {
             14 => Instruction::NOT(Register::new(seq[1]), Argument::new(seq[2])),
             15 => Instruction::RMEM(Register::new(seq[1]), Address::new(seq[2])),
             16 => Instruction::WMEM(Address::new(seq[1]), Argument::new(seq[2])),
-            17 => { Instruction::NOOP },
+            17 => Instruction::CALL(Address::new(seq[1])),
             18 => Instruction::RET,
-            19 => { Instruction::NOOP },
-            20 => { Instruction::NOOP },
+            19 => {
+                if seq[1] > 255 { panic!("Out-of-bounds value given to OUT: ``{}''", seq[1]); }
+                Instruction::OUT(seq[1] as u8)
+            },
+            20 => Instruction::IN(Address::new(seq[1])),
             21 => Instruction::NOOP,
-            _  => { Instruction::NOOP }
+            _ =>  panic!("Unrecognized opcode: ``{}''", opcode)
         }
     }
 }
@@ -543,6 +544,11 @@ mod tests {
         mod call {
             use super::*;
 
+            #[test]
+            fn call() {
+                let s = Instruction::CALL(Address::new(123));
+                assert_eq!(s.to_u16_sequence(), vec![17, 123]);
+            }
         }
 
         mod ret {
@@ -559,11 +565,22 @@ mod tests {
         mod out {
             use super::*;
 
+            #[test]
+            fn call() {
+                let s = Instruction::OUT(123);
+                assert_eq!(s.to_u16_sequence(), vec![19, 123]);
+            }
+
         }
 
         mod in_val { // to avoid reserved word
             use super::*;
 
+            #[test]
+            fn call() {
+                let s = Instruction::IN(Address::new(123));
+                assert_eq!(s.to_u16_sequence(), vec![20, 123]);
+            }
         }
 
         mod noop {
@@ -989,6 +1006,12 @@ mod tests {
         mod call {
             use super::*;
 
+            #[test]
+            fn call() {
+                let p = Instruction::CALL(Address::new(123));
+                let h = Instruction::from_u16_sequence(&vec![17, 123]);
+                assert_eq!(p, h);
+            }
         }
 
         mod ret {
@@ -1004,11 +1027,23 @@ mod tests {
         mod out {
             use super::*;
 
+            #[test]
+            fn out() {
+                let p = Instruction::OUT(123);
+                let h = Instruction::from_u16_sequence(&vec![19, 123]);
+                assert_eq!(p, h);
+            }
         }
 
         mod in_val { // to avoid reserved word
             use super::*;
 
+            #[test]
+            fn in_val() {
+                let p = Instruction::IN(Address::new(123));
+                let h = Instruction::from_u16_sequence(&vec![20, 123]);
+                assert_eq!(p, h);
+            }
         }
 
         mod noop {
