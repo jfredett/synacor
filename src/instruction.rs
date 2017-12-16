@@ -35,64 +35,66 @@ enum Instruction {
 
 impl Instruction {
 
-    /// the number of arguments a given opcode takes
+    /// The number of arguments a given opcode takes
     pub fn arg_count(self) -> u8 {
         match self {
             Instruction::HALT          => 0,
-            Instruction::SET(r, a)     => 2,
-            Instruction::PUSH(a)       => 1,
-            Instruction::POP(r)        => 1,
-            Instruction::EQ(r, a, b)   => 3,
-            Instruction::GT(r, a, b)   => 3,
-            Instruction::JMP(a)        => 1,
-            Instruction::JT(a,  b)     => 2,
-            Instruction::JF(a, b)      => 2,
-            Instruction::ADD(r, a, b)  => 3,
-            Instruction::MULT(r, a, b) => 3,
-            Instruction::MOD(r, a, b)  => 3,
-            Instruction::AND(r, a, b)  => 3,
-            Instruction::OR(r, a, b)   => 3,
-            Instruction::NOT(r, a)     => 2,
-            Instruction::RMEM(r, a)    => 2,
-            Instruction::WMEM(a, arg)  => 2,
-            Instruction::CALL(a)       => 1,
+            Instruction::SET(_, _)     => 2,
+            Instruction::PUSH(_)       => 1,
+            Instruction::POP(_)        => 1,
+            Instruction::EQ(_, _, _)   => 3,
+            Instruction::GT(_, _, _)   => 3,
+            Instruction::JMP(_)        => 1,
+            Instruction::JT(_, _)      => 2,
+            Instruction::JF(_, _)      => 2,
+            Instruction::ADD(_, _, _)  => 3,
+            Instruction::MULT(_, _, _) => 3,
+            Instruction::MOD(_, _, _)  => 3,
+            Instruction::AND(_, _, _)  => 3,
+            Instruction::OR(_, _, _)   => 3,
+            Instruction::NOT(_, _)     => 2,
+            Instruction::RMEM(_, _)    => 2,
+            Instruction::WMEM(_, _)    => 2,
+            Instruction::CALL(_)       => 1,
             Instruction::RET           => 0,
-            Instruction::OUT(u)        => 1,
-            Instruction::IN(a)         => 1,
+            Instruction::OUT(_)        => 1,
+            Instruction::IN(_)         => 1,
             Instruction::NOOP          => 0
         }
     }
 
 
-    /// given an Instruction, produce it's opcode equivalent
+    /// Given an Instruction, produce it's opcode equivalent
     pub fn to_u16_sequence(self) -> Vec<u16> {
         match self {
-            Instruction::HALT            => vec![0],
-            Instruction::SET(r, a)       => vec![1, r.to_u16(), a.to_u16()],
-            Instruction::PUSH(a)         => vec![2, a.to_u16()],
-            Instruction::POP(r)          => vec![3, r.to_u16()],
-            Instruction::EQ(r, a, b)     => vec![4, r.to_u16(), a.to_u16(), b.to_u16()],
-            Instruction::GT(r, a, b)     => vec![5, r.to_u16(), a.to_u16(), b.to_u16()],
-            Instruction::JMP(a)          => vec![6, a.to_u16()],
-            Instruction::JT(a,  b)       => vec![7, a.to_u16(), b.to_u16()],
-            Instruction::JF(a, b)        => vec![8, a.to_u16(), b.to_u16()],
-            Instruction::ADD(r, a, b)    => vec![9, r.to_u16(), a.to_u16(), b.to_u16()],
-            Instruction::MULT(r, a, b) => vec![10, r.to_u16(), a.to_u16(), b.to_u16()],
-            Instruction::MOD(r, a, b)  => vec![11, r.to_u16(), a.to_u16(), b.to_u16()],
-            Instruction::AND(r, a, b)  => vec![12, r.to_u16(), a.to_u16(), b.to_u16()],
-            Instruction::OR(r, a, b)   => vec![13, r.to_u16(), a.to_u16(), b.to_u16()],
-            //Instruction::NOT(r, a)     => vec![14, r.to_u16(), a.to_u16()],
-            //Instruction::RMEM(r, a)    => vec![15, r.to_u16(), a.to_u16()],
-            //Instruction::WMEM(a, arg)  => vec![16, a.to_u16(), arg.to_u16()],
-            //Instruction::CALL(a)       => vec![17, a.to_u16()],
-            Instruction::RET           => vec![18],
-            //Instruction::OUT(u)        => vec![19, u.0],
-            //Instruction::IN(a)         => vec![20, a.to_u16()],
-            Instruction::NOOP          => vec![21],
-            _                            => vec![21]
+            Instruction::HALT           => vec![0],
+            Instruction::SET(r, a)      => vec![1, r.to_u16(), a.to_u16()],
+            Instruction::PUSH(a)        => vec![2, a.to_u16()],
+            Instruction::POP(r)         => vec![3, r.to_u16()],
+            Instruction::EQ(r, a, b)    => vec![4, r.to_u16(), a.to_u16(), b.to_u16()],
+            Instruction::GT(r, a, b)    => vec![5, r.to_u16(), a.to_u16(), b.to_u16()],
+            Instruction::JMP(a)         => vec![6, a.to_u16()],
+            Instruction::JT(a, b)       => vec![7, a.to_u16(), b.to_u16()],
+            Instruction::JF(a, b)       => vec![8, a.to_u16(), b.to_u16()],
+            Instruction::ADD(r, a, b)   => vec![9, r.to_u16(), a.to_u16(), b.to_u16()],
+            Instruction::MULT(r, a, b)  => vec![10, r.to_u16(), a.to_u16(), b.to_u16()],
+            Instruction::MOD(r, a, b)   => vec![11, r.to_u16(), a.to_u16(), b.to_u16()],
+            Instruction::AND(r, a, b)   => vec![12, r.to_u16(), a.to_u16(), b.to_u16()],
+            Instruction::OR(r, a, b)    => vec![13, r.to_u16(), a.to_u16(), b.to_u16()],
+            Instruction::NOT(r, a)      => vec![14, r.to_u16(), a.to_u16()],
+            Instruction::RMEM(r, a)     => vec![15, r.to_u16(), a.to_u16()],
+            Instruction::WMEM(a, arg)   => vec![16, a.to_u16(), arg.to_u16()],
+            //Instruction::CALL(a)        => vec![17, a.to_u16()],
+            Instruction::RET            => vec![18],
+            //Instruction::OUT(u)         => vec![19, u.0],
+            //Instruction::IN(a)          => vec![20, a.to_u16()],
+            Instruction::NOOP           => vec![21],
+            _                           => vec![21]
         }
     }
 
+    /// Given a sequence of 16b values, create an instruction. If given more than needed, remaining
+    /// values are ignored.
     pub fn from_u16_sequence(seq: &Vec<u16>) -> Instruction {
         let opcode = seq[0];
         match opcode {
@@ -110,9 +112,9 @@ impl Instruction {
             11 => Instruction::MOD(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
             12 => Instruction::AND(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
             13 => Instruction::OR(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
-            14 => { Instruction::NOOP },
-            15 => { Instruction::NOOP },
-            16 => { Instruction::NOOP },
+            14 => Instruction::NOT(Register::new(seq[1]), Argument::new(seq[2])),
+            15 => Instruction::RMEM(Register::new(seq[1]), Address::new(seq[2])),
+            16 => Instruction::WMEM(Address::new(seq[1]), Argument::new(seq[2])),
             17 => { Instruction::NOOP },
             18 => Instruction::RET,
             19 => { Instruction::NOOP },
@@ -497,16 +499,45 @@ mod tests {
         mod not {
             use super::*;
 
+            #[test]
+            fn lit() {
+                let s = Instruction::NOT(Register::new(REGISTER_0), Argument::new(123));
+                assert_eq!(s.to_u16_sequence(), vec![14, REGISTER_0, 123]);
+            }
+
+            #[test]
+            fn reg() {
+                let s = Instruction::NOT(Register::new(REGISTER_0), Argument::new(REGISTER_1));
+                assert_eq!(s.to_u16_sequence(), vec![14, REGISTER_0, REGISTER_1]);
+            }
+
         }
 
         mod rmem {
             use super::*;
 
+            #[test]
+            fn rmem() {
+                let s = Instruction::RMEM(Register::new(REGISTER_0), Address::new(123));
+                assert_eq!(s.to_u16_sequence(), vec![15, REGISTER_0, 123]);
+            }
         }
 
         mod wmem {
             use super::*;
 
+            #[test]
+            fn lit() {
+                let s = Instruction::WMEM(Address::new(123), Argument::new(456));
+                assert_eq!(s.to_u16_sequence(), vec![16, 123, 456]);
+            }
+
+
+            #[test]
+            fn reg() {
+                let s = Instruction::WMEM(Address::new(123), Argument::new(REGISTER_0));
+                assert_eq!(s.to_u16_sequence(), vec![16, 123, REGISTER_0]);
+            }
         }
 
         mod call {
@@ -910,15 +941,48 @@ mod tests {
         mod not {
             use super::*;
 
+            #[test]
+            fn lit() {
+                let s = Instruction::NOT(Register::new(REGISTER_0), Argument::new(123));
+                let h = Instruction::from_u16_sequence(&vec![14, REGISTER_0, 123]);
+                assert_eq!(s, h);
+            }
+
+            #[test]
+            fn reg() {
+                let s = Instruction::NOT(Register::new(REGISTER_0), Argument::new(REGISTER_1));
+                let h = Instruction::from_u16_sequence(&vec![14, REGISTER_0, REGISTER_1]);
+                assert_eq!(s, h);
+            }
         }
 
         mod rmem {
             use super::*;
 
+            #[test]
+            fn lit() {
+                let s = Instruction::RMEM(Register::new(REGISTER_0), Address::new(123));
+                let h = Instruction::from_u16_sequence(&vec![15, REGISTER_0, 123]);
+                assert_eq!(s, h);
+            }
         }
 
         mod wmem {
             use super::*;
+
+            #[test]
+            fn lit() {
+                let s = Instruction::WMEM(Address::new(123), Argument::new(456));
+                let h = Instruction::from_u16_sequence(&vec![16, 123, 456]);
+                assert_eq!(s, h);
+            }
+
+            #[test]
+            fn reg() {
+                let s = Instruction::WMEM(Address::new(REGISTER_0), Argument::new(REGISTER_1));
+                let h = Instruction::from_u16_sequence(&vec![16, REGISTER_0, REGISTER_1]);
+                assert_eq!(s, h);
+            }
 
         }
 
