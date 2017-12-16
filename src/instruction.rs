@@ -77,7 +77,7 @@ impl Instruction {
             Instruction::JT(a,  b)       => vec![7, a.to_u16(), b.to_u16()],
             Instruction::JF(a, b)        => vec![8, a.to_u16(), b.to_u16()],
             Instruction::ADD(r, a, b)    => vec![9, r.to_u16(), a.to_u16(), b.to_u16()],
-            //Instruction::MULT(r, a, b) => vec![10, r.to_u16(), a.to_u16(), b.to_u16()],
+            Instruction::MULT(r, a, b) => vec![10, r.to_u16(), a.to_u16(), b.to_u16()],
             //Instruction::MOD(r, a, b)  => vec![11, r.to_u16(), a.to_u16(), b.to_u16()],
             //Instruction::AND(r, a, b)  => vec![12, r.to_u16(), a.to_u16(), b.to_u16()],
             //Instruction::OR(r, a, b)   => vec![13, r.to_u16(), a.to_u16(), b.to_u16()],
@@ -106,7 +106,7 @@ impl Instruction {
             7  => Instruction::JT(Argument::new(seq[1]), Argument::new(seq[2])),
             8  => Instruction::JF(Argument::new(seq[1]), Argument::new(seq[2])),
             9  => Instruction::ADD(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
-            10 => { Instruction::NOOP },
+            10  => Instruction::MULT(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
             11 => { Instruction::NOOP },
             12 => { Instruction::NOOP },
             13 => { Instruction::NOOP },
@@ -369,6 +369,33 @@ mod tests {
         mod mult {
             use super::*;
 
+            #[test]
+            fn lit_lit() {
+                let e = Instruction::MULT(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
+                let h = vec![10, REGISTER_6, 123, 456];
+                assert_eq!(e.to_u16_sequence(), h);
+            }
+
+            #[test]
+            fn lit_reg() {
+                let e = Instruction::MULT(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
+                let h = vec![10, REGISTER_6, 123, REGISTER_7];
+                assert_eq!(e.to_u16_sequence(), h);
+            }
+
+            #[test]
+            fn reg_lit() {
+                let e = Instruction::MULT(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
+                let h = vec![10, REGISTER_6, REGISTER_6, 456];
+                assert_eq!(e.to_u16_sequence(), h);
+            }
+
+            #[test]
+            fn reg_reg() {
+                let e = Instruction::MULT(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
+                let h = vec![10, REGISTER_6, REGISTER_6, REGISTER_7];
+                assert_eq!(e.to_u16_sequence(), h);
+            }
         }
 
         mod modulo { // used full name to avoid collision
@@ -661,6 +688,34 @@ mod tests {
 
         mod mult {
             use super::*;
+
+            #[test]
+            fn lit_lit() {
+                let e = Instruction::MULT(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
+                let h = Instruction::from_u16_sequence(&vec![10, REGISTER_6, 123, 456]);
+                assert_eq!(e,h);
+            }
+
+            #[test]
+            fn lit_reg() {
+                let e = Instruction::MULT(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
+                let h = Instruction::from_u16_sequence(&vec![10, REGISTER_6, 123, REGISTER_7]);
+                assert_eq!(e,h);
+            }
+
+            #[test]
+            fn reg_lit() {
+                let e = Instruction::MULT(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
+                let h = Instruction::from_u16_sequence(&vec![10, REGISTER_6, REGISTER_6, 456]);
+                assert_eq!(e,h);
+            }
+
+            #[test]
+            fn reg_reg() {
+                let e = Instruction::MULT(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
+                let h = Instruction::from_u16_sequence(&vec![10, REGISTER_6, REGISTER_6, REGISTER_7]);
+                assert_eq!(e,h);
+            }
 
         }
 
