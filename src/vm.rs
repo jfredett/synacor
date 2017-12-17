@@ -3,6 +3,7 @@ use std::convert::From;
 //use u15::u15;
 use address::Address;
 use argument::Argument;
+use register::Register;
 use instruction::Instruction;
 use constants::*;
 
@@ -24,9 +25,15 @@ pub enum VMState {
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum VMError {
     BadOpcode(u16),
+    BadInstruction(Instruction),
     InvalidMemoryAccess(Address),
-    MalformedInstruction(Vec<u16>)
+    MalformedInstruction(Vec<u16>),
+    InvalidCharacterArgument(Argument),
+    JumpOutOfBounds(Address),
+    UnknownError
 }
+
+type VMResult = Result<VMState, VMError>;
 
 impl VM {
     pub fn init() -> VM {
@@ -37,6 +44,10 @@ impl VM {
             registers: [0; 8],
             current_state: VMState::HALT,
         }
+    }
+
+    pub fn instruction_pointer(&self) -> Address {
+        return self.instruction_pointer;
     }
 
     pub fn load_program(&mut self, offset: Address, bin: &Vec<u16>) {
@@ -51,7 +62,7 @@ impl VM {
         }
     }
 
-    pub fn run(&mut self, start_position: Address) -> Result<VMState, VMError> {
+    pub fn run(&mut self, start_position: Address) -> VMResult {
         self.instruction_pointer = start_position;
         self.current_state = VMState::RUN;
 
@@ -69,35 +80,60 @@ impl VM {
         self.current_state == VMState::RUN
     }
 
-    pub fn step(&mut self) -> Result<VMState, VMError> {
+    pub fn step(&mut self) -> VMResult {
         match self.current_instruction() {
             Ok(current_instruction) => self.execute_instruction(current_instruction),
             Err(e) => Err(e)
         }
     }
 
-    fn execute_instruction(&mut self, instruction: Instruction) -> Result<VMState, VMError> {
+    fn execute_instruction(&mut self, instruction: Instruction) -> VMResult {
        match instruction {
-           Instruction::OUT(a) => {
-               self.write_output(a);
-               Ok(VMState::RUN)
-           },
-           Instruction::NOOP => Ok(VMState::RUN),
-           Instruction::HALT   => Ok(VMState::HALT),
-           _ => Ok(VMState::HALT) // any unrecognized opcode halts.
+           Instruction::OUT(a)       => self.write_output(a),
+           Instruction::JMP(a)       => self.jump(a),
+           Instruction::NOOP         => Ok(VMState::RUN),
+           Instruction::HALT         => Ok(VMState::HALT),
+           _                         => Err(VMError::BadInstruction(instruction)) // any unrecognized opcode halts.
        }
+    }
+
+    fn jump(&mut self, arg: Argument) -> VMResult {
+        let target = match arg {
+            Argument::Literal(v) => v.0,
+            Argument::Register(r) => self.read_register(r)
+        };
+
+        let addr = Address::new(target);
+
+        if addr.is_memory() {
+            self.instruction_pointer = addr;
+            return Ok(VMState::RUN);
+        } else if addr.is_register() || addr.is_invalid() {
+            return Err(VMError::JumpOutOfBounds(addr));
+        } else {
+            return Err(VMError::UnknownError);
+        }
     }
 
     /// writes the argument to stdout
     ///
     /// TODO: make this write to a buffer held in the VM struct
-    fn write_output(&self, arg: Argument) {
+    fn write_output(&self, arg: Argument) -> VMResult {
+
         let chr = match arg {
             Argument::Literal(v) => char::from(v.0 as u8),
-            Argument::Register(r) => char::from(self.registers[r.as_index()] as u8)
+            Argument::Register(r) => char::from(self.read_register(r) as u8)
         };
 
+        if !chr.is_ascii() { return Err(VMError::InvalidCharacterArgument(arg)); }
+
         print!("{}", chr);
+
+        Ok(VMState::RUN)
+    }
+
+    fn read_register(&self, r: Register) -> u16 {
+        return self.registers[r.as_index()];
     }
 
     fn write_memory(&mut self, address: &Address, value: u16) {
@@ -182,6 +218,52 @@ mod tests {
             assert_eq!(vm.memory[1004], 19);
             assert_eq!(vm.memory[1005], 32768);
         }
+    }
+
+    mod instructions {
+        use super::*;
+
+        mod jump {
+            use super::*;
+
+            #[test]
+            fn happy_lit() {
+                let mut vm = VM::init();
+                let program = Instruction::JMP(Argument::new(10)).to_u16_sequence();
+                vm.load_program(Address::new(0), &program);
+
+                vm.run(Address::new(0));
+
+                // it goes to @11 because it has to read the halt instruction at @10.
+                assert_eq!(vm.instruction_pointer, Address::new(11));
+            }
+
+            // OOB isn't possible due to types, the instruction would fail to parse and we'd fail
+            // further up. We might run into it with registers though, since SET isn't implemented
+
+
+            #[test] 
+            fn happy_reg() {
+                let mut vm = VM::init();
+                let mut program = vec![];
+
+                // Fails because 'SET' isn't implemented.
+                //program.append(&mut Instruction::SET(Register::R0, Argument::new(15)).to_u16_sequence());
+                // FIXME: So we'll do it manually for now
+                vm.registers[0] = 15;
+
+                program.append(&mut Instruction::JMP(Argument::new(REGISTER_0)).to_u16_sequence());
+
+                vm.load_program(Address::new(0), &program);
+
+                vm.run(Address::new(0));
+
+                // it goes to @16 because it has to read the halt instruction at @15.
+                assert_eq!(vm.instruction_pointer, Address::new(16));
+            }
+
+        }
+
     }
 
     mod step {

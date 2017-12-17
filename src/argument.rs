@@ -4,7 +4,7 @@ use u15::u15;
 use register::Register;
 use constants::*;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Argument {
     Literal(u15),
     Register(Register)

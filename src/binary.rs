@@ -24,7 +24,6 @@ impl Binary {
 
         let mut v: Vec<u16> = vec![];
         let mut buf = [0u8; 2];
-        let mut debug_idx = 0;
         loop {
             match f.read(&mut buf) {
                 Err(_) => panic!("Error on reading byes during parse {:?}", buf),
@@ -37,7 +36,6 @@ impl Binary {
                     self.binary.push(u);
                 },
             }
-            debug_idx += 1;
         }
 
 

@@ -6,7 +6,7 @@ use argument::Argument;
 
 
 /// Represents a machine instruction
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Instruction {
     HALT,
     SET(Register, Argument),

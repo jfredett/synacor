@@ -48,12 +48,19 @@ fn main() {
 
     println!("Initializing VM");
     let mut vm = VM::init();
+
     println!("Loading Program: `{}'", bin_path);
     vm.load_program(Address::new(0), b.binary());
+
     println!("Running...");
+    println!("");
+
     match vm.run(Address::new(offset)) {
         Ok(state) => println!("SUCCESS: Program Finished with: {:?}", state),
         Err(e) => println!("ERROR: Program Finished with: {:?}", e),
     }
+
+    println!("");
+    println!("Ended on instruction: {}", vm.instruction_pointer());
 }
 

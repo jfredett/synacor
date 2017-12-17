@@ -3,7 +3,7 @@ use std::ops::*;
 use constants::*;
 
 /// a type representing the weird 15b modular number system.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 #[allow(non_camel_case_types)]
 pub struct u15(pub u16);
 

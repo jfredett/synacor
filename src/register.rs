@@ -3,7 +3,7 @@ use std::fmt;
 use address::Address;
 use constants::*;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum Register {
     R0,
     R1,

@@ -68,9 +68,8 @@ impl Address {
         return REGISTER_0 <= self.0 && self.0 <= REGISTER_7;
     }
 
-    pub fn is_value(&self) -> bool {
+    pub fn is_memory(&self) -> bool {
         return self.is_valid() && !self.is_register();
-
     }
 
     pub fn next(&mut self) {
