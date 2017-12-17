@@ -42,6 +42,19 @@ impl Register {
         }
     }
 
+    pub fn as_index(&self) -> usize {
+        return match *self {
+            Register::R0 => 0,
+            Register::R1 => 1,
+            Register::R2 => 2,
+            Register::R3 => 3,
+            Register::R4 => 4,
+            Register::R5 => 5,
+            Register::R6 => 6,
+            Register::R7 => 7
+        }
+    }
+
     pub fn to_u16(&self) -> u16 {
         self.as_address().value()
     }

@@ -41,13 +41,16 @@ impl Binary {
         while !v.is_empty() {
             let opcode = v.remove(1);
             let mut instruction = vec![opcode];
-            let arg_count = Instruction::arg_count(opcode);
+            // XXX: this is a hack for the minute. When I come back around to building the asm/dasm,
+            // I'll fix this.
+            let arg_count = Instruction::arg_count(opcode).unwrap(); 
 
             for _ in 0..arg_count {
                 instruction.push(v.remove(1));
             }
 
-            self.instructions.push(Instruction::from_u16_sequence(&instruction));
+            // XXX: more hax
+            self.instructions.push(Instruction::from_u16_sequence(&instruction).unwrap());
         }
     }
 }

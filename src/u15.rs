@@ -9,11 +9,11 @@ pub struct u15(pub u16);
 
 impl u15 {
     pub const fn min_value() -> u15 {
-        return u15(0);
+        return u15(U15_MIN);
     }
 
     pub const fn max_value() -> u15 {
-        return u15(MODULUS - 1);
+        return u15(U15_MAX);
     }
 }
 

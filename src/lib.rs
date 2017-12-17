@@ -11,6 +11,9 @@ mod constants {
     pub const REGISTER_7 : u16 = 32775;
 
     pub const MODULUS : u16 = 32768;
+
+    pub const U15_MAX : u16 = MODULUS - 1;
+    pub const U15_MIN : u16 = 0;
 }
 
 pub mod address;
@@ -19,4 +22,5 @@ pub mod u15;
 pub mod instruction;
 pub mod argument;
 pub mod binary;
+pub mod vm;
 

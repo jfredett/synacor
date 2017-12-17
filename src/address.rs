@@ -12,7 +12,7 @@ use constants::*;
 /// - 0..32767          literal value
 /// - 32768..32775      registers 0..7
 /// - 32776..65535      invalid
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Copy)]
 pub struct Address(u16);
 
 impl From<u8> for Address {
@@ -73,6 +73,10 @@ impl Address {
 
     }
 
+    pub fn next(&mut self) {
+        self.0 += 1;
+    }
+
 	/// If the Address is a register, return it, if it is not a register, return None.
     pub fn as_register(&self) -> Option<Register> {
         if self.is_register() {
@@ -83,8 +87,9 @@ impl Address {
     }
 
 	pub fn value(&self) -> u16 { self.0 }
-    pub fn to_u15(&self) -> u15 { u15(self.value()) }
-    pub fn to_u16(&self) -> u16 { self.value() }
+    pub fn to_u15(&self) -> u15 { u15(self.0) }
+    pub fn to_u16(&self) -> u16 { self.0 }
+    pub fn to_usize(&self) -> usize { self.0 as usize } 
 }
 
 
@@ -92,6 +97,13 @@ impl Address {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn next() {
+		let mut a = Address::new(123);
+        a.next();
+        assert_eq!(a.value(), 124);
+    }
 
 	#[test]
 	fn valid() {

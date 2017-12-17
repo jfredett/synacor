@@ -27,7 +27,7 @@ pub enum Instruction {
     WMEM(Address, Argument),
     CALL(Address),
     RET,
-    OUT(u8),
+    OUT(Argument), // XXX: this should take an argument, not a u8, per the example program
     IN(Address),
     NOOP
 }
@@ -35,31 +35,31 @@ pub enum Instruction {
 impl Instruction {
 
     /// The number of arguments a given opcode takes
-    pub fn arg_count(opcode: u16) -> usize {
+    pub fn arg_count(opcode: u16) -> Option<usize> {
         match opcode {
-            0 => 0,
-            1 => 2,
-            2 => 1,
-            3 => 1,
-            4 => 3,
-            5 => 3,
-            6 => 1,
-            7 => 2,
-            8 => 2,
-            9 => 3,
-            10 => 3,
-            11 => 3,
-            12 => 3,
-            13 => 3,
-            14 => 2,
-            15 => 2,
-            16 => 2,
-            17 => 1,
-            18 => 0,
-            19 => 1,
-            20 => 1,
-            21 => 0,
-            _ =>  panic!("Unrecognized opcode: ``{}''", opcode)
+            0 => Some(0),
+            1 => Some(2),
+            2 => Some(1),
+            3 => Some(1),
+            4 => Some(3),
+            5 => Some(3),
+            6 => Some(1),
+            7 => Some(2),
+            8 => Some(2),
+            9 => Some(3),
+            10 => Some(3),
+            11 => Some(3),
+            12 => Some(3),
+            13 => Some(3),
+            14 => Some(2),
+            15 => Some(2),
+            16 => Some(2),
+            17 => Some(1),
+            18 => Some(0),
+            19 => Some(1),
+            20 => Some(1),
+            21 => Some(0),
+            _ => None 
         }
     }
 
@@ -86,7 +86,7 @@ impl Instruction {
             Instruction::WMEM(a, arg)   => vec![16, a.to_u16(), arg.to_u16()],
             Instruction::CALL(a)        => vec![17, a.to_u16()],
             Instruction::RET            => vec![18],
-            Instruction::OUT(u)         => vec![19, u as u16],
+            Instruction::OUT(a)         => vec![19, a.to_u16()],
             Instruction::IN(a)          => vec![20, a.to_u16()],
             Instruction::NOOP           => vec![21]
         }
@@ -94,37 +94,35 @@ impl Instruction {
 
     /// Given a sequence of 16b values, create an instruction. If given more than needed, remaining
     /// values are ignored.
-    pub fn from_u16_sequence(seq: &Vec<u16>) -> Instruction {
+    pub fn from_u16_sequence(seq: &Vec<u16>) -> Option<Instruction> {
         let opcode = seq[0];
         match opcode {
-            0  => Instruction::HALT,
-            1  => Instruction::SET(Register::new(seq[1]), Argument::new(seq[2])),
-            2  => Instruction::PUSH(Argument::new(seq[1])),
-            3  => Instruction::POP(Register::new(seq[1])),
-            4  => Instruction::EQ(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
-            5  => Instruction::GT(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
-            6  => Instruction::JMP(Argument::new(seq[1])),
-            7  => Instruction::JT(Argument::new(seq[1]), Argument::new(seq[2])),
-            8  => Instruction::JF(Argument::new(seq[1]), Argument::new(seq[2])),
-            9  => Instruction::ADD(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
-            10 => Instruction::MULT(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
-            11 => Instruction::MOD(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
-            12 => Instruction::AND(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
-            13 => Instruction::OR(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3])),
-            14 => Instruction::NOT(Register::new(seq[1]), Argument::new(seq[2])),
-            15 => Instruction::RMEM(Register::new(seq[1]), Address::new(seq[2])),
-            16 => Instruction::WMEM(Address::new(seq[1]), Argument::new(seq[2])),
-            17 => Instruction::CALL(Address::new(seq[1])),
-            18 => Instruction::RET,
-            19 => {
-                if seq[1] > 255 { panic!("Out-of-bounds value given to OUT: ``{}''", seq[1]); }
-                Instruction::OUT(seq[1] as u8)
-            },
-            20 => Instruction::IN(Address::new(seq[1])),
-            21 => Instruction::NOOP,
-            _ =>  panic!("Unrecognized opcode: ``{}''", opcode)
+            0  => Some(Instruction::HALT),
+            1  => Some(Instruction::SET(Register::new(seq[1]), Argument::new(seq[2]))),
+            2  => Some(Instruction::PUSH(Argument::new(seq[1]))),
+            3  => Some(Instruction::POP(Register::new(seq[1]))),
+            4  => Some(Instruction::EQ(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3]))),
+            5  => Some(Instruction::GT(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3]))),
+            6  => Some(Instruction::JMP(Argument::new(seq[1]))),
+            7  => Some(Instruction::JT(Argument::new(seq[1]), Argument::new(seq[2]))),
+            8  => Some(Instruction::JF(Argument::new(seq[1]), Argument::new(seq[2]))),
+            9  => Some(Instruction::ADD(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3]))),
+            10 => Some(Instruction::MULT(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3]))),
+            11 => Some(Instruction::MOD(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3]))),
+            12 => Some(Instruction::AND(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3]))),
+            13 => Some(Instruction::OR(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3]))),
+            14 => Some(Instruction::NOT(Register::new(seq[1]), Argument::new(seq[2]))),
+            15 => Some(Instruction::RMEM(Register::new(seq[1]), Address::new(seq[2]))),
+            16 => Some(Instruction::WMEM(Address::new(seq[1]), Argument::new(seq[2]))),
+            17 => Some(Instruction::CALL(Address::new(seq[1]))),
+            18 => Some(Instruction::RET),
+            19 => Some(Instruction::OUT(Argument::new(seq[1]))),
+            20 => Some(Instruction::IN(Address::new(seq[1]))),
+            21 => Some(Instruction::NOOP),
+            _ => None
         }
     }
+
 
     pub fn name(self) -> &'static str {
         match self {
@@ -579,9 +577,15 @@ mod tests {
             use super::*;
 
             #[test]
-            fn test() { 
-                let s = format!("{}", Instruction::OUT(123));
+            fn lit() { 
+                let s = format!("{}", Instruction::OUT(Argument::new(123)));
                 assert_eq!(s, "OUT 123");
+            }
+
+            #[test]
+            fn reg() { 
+                let s = format!("{}", Instruction::OUT(Argument::new(REGISTER_1)));
+                assert_eq!(s, "OUT R1");
             }
         }
 
@@ -1032,11 +1036,16 @@ mod tests {
             use super::*;
 
             #[test]
-            fn call() {
-                let s = Instruction::OUT(123);
+            fn lit() {
+                let s = Instruction::OUT(Argument::new(123));
                 assert_eq!(s.to_u16_sequence(), vec![19, 123]);
             }
 
+            #[test]
+            fn reg() {
+                let s = Instruction::OUT(Argument::new(REGISTER_0));
+                assert_eq!(s.to_u16_sequence(), vec![19, REGISTER_0]);
+            }
         }
 
         mod in_val { // to avoid reserved word
@@ -1067,7 +1076,7 @@ mod tests {
             use super::*;
             #[test]
             fn halt() {
-                let h = Instruction::from_u16_sequence(&vec![0]);
+                let h = Instruction::from_u16_sequence(&vec![0]).unwrap();
                 assert_eq!(Instruction::HALT, h);
             }
         }
@@ -1077,14 +1086,14 @@ mod tests {
             #[test]
             fn lit() {
                 let s = Instruction::SET(Register::new(REGISTER_0), Argument::new(123));
-                let h = Instruction::from_u16_sequence(&vec![1, REGISTER_0, 123]);
+                let h = Instruction::from_u16_sequence(&vec![1, REGISTER_0, 123]).unwrap();
                 assert_eq!(s, h);
             }
 
             #[test]
             fn reg() {
                 let s = Instruction::SET(Register::new(REGISTER_0), Argument::new(REGISTER_1));
-                let h = Instruction::from_u16_sequence(&vec![1, REGISTER_0, REGISTER_1]);
+                let h = Instruction::from_u16_sequence(&vec![1, REGISTER_0, REGISTER_1]).unwrap();
                 assert_eq!(s, h);
             }
         }
@@ -1094,14 +1103,14 @@ mod tests {
             #[test]
             fn lit() {
                 let p = Instruction::PUSH(Argument::new(123));
-                let h = Instruction::from_u16_sequence(&vec![2, 123]);
+                let h = Instruction::from_u16_sequence(&vec![2, 123]).unwrap();
                 assert_eq!(p, h);
             }
 
             #[test]
             fn reg() {
                 let p = Instruction::PUSH(Argument::new(REGISTER_1));
-                let h = Instruction::from_u16_sequence(&vec![2, REGISTER_1]);
+                let h = Instruction::from_u16_sequence(&vec![2, REGISTER_1]).unwrap();
                 assert_eq!(p, h);
             }
         }
@@ -1111,7 +1120,7 @@ mod tests {
             #[test]
             fn reg() {
                 let p = Instruction::POP(Register::new(REGISTER_1));
-                let h = Instruction::from_u16_sequence(&vec![3, REGISTER_1]);
+                let h = Instruction::from_u16_sequence(&vec![3, REGISTER_1]).unwrap();
                 assert_eq!(p, h);
             }
         }
@@ -1121,28 +1130,28 @@ mod tests {
             #[test]
             fn lit_lit() {
                 let e = Instruction::EQ(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![4, REGISTER_6, 123, 456]);
+                let h = Instruction::from_u16_sequence(&vec![4, REGISTER_6, 123, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn lit_reg() {
                 let e = Instruction::EQ(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![4, REGISTER_6, 123, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![4, REGISTER_6, 123, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_lit() {
                 let e = Instruction::EQ(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![4, REGISTER_6, REGISTER_6, 456]);
+                let h = Instruction::from_u16_sequence(&vec![4, REGISTER_6, REGISTER_6, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_reg() {
                 let e = Instruction::EQ(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![4, REGISTER_6, REGISTER_6, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![4, REGISTER_6, REGISTER_6, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
         }
@@ -1152,28 +1161,28 @@ mod tests {
             #[test]
             fn lit_lit() {
                 let e = Instruction::GT(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![5, REGISTER_6, 123, 456]);
+                let h = Instruction::from_u16_sequence(&vec![5, REGISTER_6, 123, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn lit_reg() {
                 let e = Instruction::GT(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![5, REGISTER_6, 123, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![5, REGISTER_6, 123, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_lit() {
                 let e = Instruction::GT(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![5, REGISTER_6, REGISTER_6, 456]);
+                let h = Instruction::from_u16_sequence(&vec![5, REGISTER_6, REGISTER_6, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_reg() {
                 let e = Instruction::GT(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![5, REGISTER_6, REGISTER_6, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![5, REGISTER_6, REGISTER_6, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
         }
@@ -1184,14 +1193,14 @@ mod tests {
             #[test]
             fn reg() {
                 let p = Instruction::JMP(Argument::new(123));
-                let h = Instruction::from_u16_sequence(&vec![6, 123]);
+                let h = Instruction::from_u16_sequence(&vec![6, 123]).unwrap();
                 assert_eq!(p, h);
             }
 
             #[test]
             fn lit() {
                 let p = Instruction::JMP(Argument::new(REGISTER_1));
-                let h = Instruction::from_u16_sequence(&vec![6, REGISTER_1]);
+                let h = Instruction::from_u16_sequence(&vec![6, REGISTER_1]).unwrap();
                 assert_eq!(p, h);
             }
         }
@@ -1202,28 +1211,28 @@ mod tests {
             #[test]
             fn lit_lit() {
                 let s = Instruction::JT(Argument::new(123), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![7, 123, 456]);
+                let h = Instruction::from_u16_sequence(&vec![7, 123, 456]).unwrap();
                 assert_eq!(s, h);
             }
 
             #[test]
             fn lit_reg() {
                 let s = Instruction::JT(Argument::new(123), Argument::new(REGISTER_1));
-                let h = Instruction::from_u16_sequence(&vec![7, 123, REGISTER_1]);
+                let h = Instruction::from_u16_sequence(&vec![7, 123, REGISTER_1]).unwrap();
                 assert_eq!(s, h);
             }
 
             #[test]
             fn reg_lit() {
                 let s = Instruction::JT(Argument::new(REGISTER_0), Argument::new(123));
-                let h = Instruction::from_u16_sequence(&vec![7, REGISTER_0, 123]);
+                let h = Instruction::from_u16_sequence(&vec![7, REGISTER_0, 123]).unwrap();
                 assert_eq!(s, h);
             }
 
             #[test]
             fn reg_reg() {
                 let s = Instruction::JT(Argument::new(REGISTER_0), Argument::new(REGISTER_1));
-                let h = Instruction::from_u16_sequence(&vec![7, REGISTER_0, REGISTER_1]);
+                let h = Instruction::from_u16_sequence(&vec![7, REGISTER_0, REGISTER_1]).unwrap();
                 assert_eq!(s, h);
             }
         }
@@ -1234,28 +1243,28 @@ mod tests {
             #[test]
             fn lit_lit() {
                 let s = Instruction::JF(Argument::new(123), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![8, 123, 456]);
+                let h = Instruction::from_u16_sequence(&vec![8, 123, 456]).unwrap();
                 assert_eq!(s, h);
             }
 
             #[test]
             fn lit_reg() {
                 let s = Instruction::JF(Argument::new(123), Argument::new(REGISTER_1));
-                let h = Instruction::from_u16_sequence(&vec![8, 123, REGISTER_1]);
+                let h = Instruction::from_u16_sequence(&vec![8, 123, REGISTER_1]).unwrap();
                 assert_eq!(s, h);
             }
 
             #[test]
             fn reg_lit() {
                 let s = Instruction::JF(Argument::new(REGISTER_0), Argument::new(123));
-                let h = Instruction::from_u16_sequence(&vec![8, REGISTER_0, 123]);
+                let h = Instruction::from_u16_sequence(&vec![8, REGISTER_0, 123]).unwrap();
                 assert_eq!(s, h);
             }
 
             #[test]
             fn reg_reg() {
                 let s = Instruction::JF(Argument::new(REGISTER_0), Argument::new(REGISTER_1));
-                let h = Instruction::from_u16_sequence(&vec![8, REGISTER_0, REGISTER_1]);
+                let h = Instruction::from_u16_sequence(&vec![8, REGISTER_0, REGISTER_1]).unwrap();
                 assert_eq!(s, h);
             }
 
@@ -1266,28 +1275,28 @@ mod tests {
             #[test]
             fn lit_lit() {
                 let e = Instruction::ADD(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![9, REGISTER_6, 123, 456]);
+                let h = Instruction::from_u16_sequence(&vec![9, REGISTER_6, 123, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn lit_reg() {
                 let e = Instruction::ADD(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![9, REGISTER_6, 123, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![9, REGISTER_6, 123, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_lit() {
                 let e = Instruction::ADD(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![9, REGISTER_6, REGISTER_6, 456]);
+                let h = Instruction::from_u16_sequence(&vec![9, REGISTER_6, REGISTER_6, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_reg() {
                 let e = Instruction::ADD(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![9, REGISTER_6, REGISTER_6, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![9, REGISTER_6, REGISTER_6, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
         }
@@ -1298,28 +1307,28 @@ mod tests {
             #[test]
             fn lit_lit() {
                 let e = Instruction::MULT(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![10, REGISTER_6, 123, 456]);
+                let h = Instruction::from_u16_sequence(&vec![10, REGISTER_6, 123, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn lit_reg() {
                 let e = Instruction::MULT(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![10, REGISTER_6, 123, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![10, REGISTER_6, 123, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_lit() {
                 let e = Instruction::MULT(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![10, REGISTER_6, REGISTER_6, 456]);
+                let h = Instruction::from_u16_sequence(&vec![10, REGISTER_6, REGISTER_6, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_reg() {
                 let e = Instruction::MULT(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![10, REGISTER_6, REGISTER_6, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![10, REGISTER_6, REGISTER_6, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
 
@@ -1331,28 +1340,28 @@ mod tests {
             #[test]
             fn lit_lit() {
                 let e = Instruction::MOD(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![11, REGISTER_6, 123, 456]);
+                let h = Instruction::from_u16_sequence(&vec![11, REGISTER_6, 123, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn lit_reg() {
                 let e = Instruction::MOD(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![11, REGISTER_6, 123, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![11, REGISTER_6, 123, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_lit() {
                 let e = Instruction::MOD(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![11, REGISTER_6, REGISTER_6, 456]);
+                let h = Instruction::from_u16_sequence(&vec![11, REGISTER_6, REGISTER_6, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_reg() {
                 let e = Instruction::MOD(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![11, REGISTER_6, REGISTER_6, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![11, REGISTER_6, REGISTER_6, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
         }
@@ -1363,28 +1372,28 @@ mod tests {
             #[test]
             fn lit_lit() {
                 let e = Instruction::AND(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![12, REGISTER_6, 123, 456]);
+                let h = Instruction::from_u16_sequence(&vec![12, REGISTER_6, 123, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn lit_reg() {
                 let e = Instruction::AND(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![12, REGISTER_6, 123, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![12, REGISTER_6, 123, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_lit() {
                 let e = Instruction::AND(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![12, REGISTER_6, REGISTER_6, 456]);
+                let h = Instruction::from_u16_sequence(&vec![12, REGISTER_6, REGISTER_6, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_reg() {
                 let e = Instruction::AND(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![12, REGISTER_6, REGISTER_6, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![12, REGISTER_6, REGISTER_6, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
         }
@@ -1395,28 +1404,28 @@ mod tests {
             #[test]
             fn lit_lit() {
                 let e = Instruction::OR(Register::new(REGISTER_6), Argument::new(123), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![13, REGISTER_6, 123, 456]);
+                let h = Instruction::from_u16_sequence(&vec![13, REGISTER_6, 123, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn lit_reg() {
                 let e = Instruction::OR(Register::new(REGISTER_6), Argument::new(123), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![13, REGISTER_6, 123, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![13, REGISTER_6, 123, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_lit() {
                 let e = Instruction::OR(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![13, REGISTER_6, REGISTER_6, 456]);
+                let h = Instruction::from_u16_sequence(&vec![13, REGISTER_6, REGISTER_6, 456]).unwrap();
                 assert_eq!(e,h);
             }
 
             #[test]
             fn reg_reg() {
                 let e = Instruction::OR(Register::new(REGISTER_6), Argument::new(REGISTER_6), Argument::new(REGISTER_7));
-                let h = Instruction::from_u16_sequence(&vec![13, REGISTER_6, REGISTER_6, REGISTER_7]);
+                let h = Instruction::from_u16_sequence(&vec![13, REGISTER_6, REGISTER_6, REGISTER_7]).unwrap();
                 assert_eq!(e,h);
             }
         }
@@ -1427,14 +1436,14 @@ mod tests {
             #[test]
             fn lit() {
                 let s = Instruction::NOT(Register::new(REGISTER_0), Argument::new(123));
-                let h = Instruction::from_u16_sequence(&vec![14, REGISTER_0, 123]);
+                let h = Instruction::from_u16_sequence(&vec![14, REGISTER_0, 123]).unwrap();
                 assert_eq!(s, h);
             }
 
             #[test]
             fn reg() {
                 let s = Instruction::NOT(Register::new(REGISTER_0), Argument::new(REGISTER_1));
-                let h = Instruction::from_u16_sequence(&vec![14, REGISTER_0, REGISTER_1]);
+                let h = Instruction::from_u16_sequence(&vec![14, REGISTER_0, REGISTER_1]).unwrap();
                 assert_eq!(s, h);
             }
         }
@@ -1445,7 +1454,7 @@ mod tests {
             #[test]
             fn lit() {
                 let s = Instruction::RMEM(Register::new(REGISTER_0), Address::new(123));
-                let h = Instruction::from_u16_sequence(&vec![15, REGISTER_0, 123]);
+                let h = Instruction::from_u16_sequence(&vec![15, REGISTER_0, 123]).unwrap();
                 assert_eq!(s, h);
             }
         }
@@ -1456,14 +1465,14 @@ mod tests {
             #[test]
             fn lit() {
                 let s = Instruction::WMEM(Address::new(123), Argument::new(456));
-                let h = Instruction::from_u16_sequence(&vec![16, 123, 456]);
+                let h = Instruction::from_u16_sequence(&vec![16, 123, 456]).unwrap();
                 assert_eq!(s, h);
             }
 
             #[test]
             fn reg() {
                 let s = Instruction::WMEM(Address::new(REGISTER_0), Argument::new(REGISTER_1));
-                let h = Instruction::from_u16_sequence(&vec![16, REGISTER_0, REGISTER_1]);
+                let h = Instruction::from_u16_sequence(&vec![16, REGISTER_0, REGISTER_1]).unwrap();
                 assert_eq!(s, h);
             }
 
@@ -1475,7 +1484,7 @@ mod tests {
             #[test]
             fn call() {
                 let p = Instruction::CALL(Address::new(123));
-                let h = Instruction::from_u16_sequence(&vec![17, 123]);
+                let h = Instruction::from_u16_sequence(&vec![17, 123]).unwrap();
                 assert_eq!(p, h);
             }
         }
@@ -1485,7 +1494,7 @@ mod tests {
 
             #[test]
             fn ret() {
-                let h = Instruction::from_u16_sequence(&vec![18]);
+                let h = Instruction::from_u16_sequence(&vec![18]).unwrap();
                 assert_eq!(Instruction::RET, h);
             }
         }
@@ -1494,9 +1503,16 @@ mod tests {
             use super::*;
 
             #[test]
-            fn out() {
-                let p = Instruction::OUT(123);
-                let h = Instruction::from_u16_sequence(&vec![19, 123]);
+            fn lit() {
+                let p = Instruction::OUT(Argument::new(123));
+                let h = Instruction::from_u16_sequence(&vec![19, 123]).unwrap();
+                assert_eq!(p, h);
+            }
+
+            #[test]
+            fn reg() {
+                let p = Instruction::OUT(Argument::new(REGISTER_1));
+                let h = Instruction::from_u16_sequence(&vec![19, REGISTER_1]).unwrap();
                 assert_eq!(p, h);
             }
         }
@@ -1507,7 +1523,7 @@ mod tests {
             #[test]
             fn in_val() {
                 let p = Instruction::IN(Address::new(123));
-                let h = Instruction::from_u16_sequence(&vec![20, 123]);
+                let h = Instruction::from_u16_sequence(&vec![20, 123]).unwrap();
                 assert_eq!(p, h);
             }
         }
@@ -1517,7 +1533,7 @@ mod tests {
 
             #[test]
             fn noop() {
-                let h = Instruction::from_u16_sequence(&vec![21]);
+                let h = Instruction::from_u16_sequence(&vec![21]).unwrap();
                 assert_eq!(Instruction::NOOP, h);
             }
         }
