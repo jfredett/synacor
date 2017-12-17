@@ -13,5 +13,10 @@ path = "src/bin/assembler.rs"
 name="syn-dis"
 path = "src/bin/disassembler.rs"
 
+# vm to run programs
+[[bin]]
+name="syn-vm"
+path = "src/bin/vm.rs"
+
 [dependencies]
 clap = "2.29.0"
