@@ -5,7 +5,7 @@ use instruction::Instruction;
 
 pub struct Binary {
     file: String,
-    instructions: Vec<Instruction>,
+    pub instructions: Vec<Instruction>, // don't leave this public
 }
 
 impl Binary {
@@ -23,13 +23,19 @@ impl Binary {
         let mut buf = [0u8; 2];
         loop {
             match f.read(&mut buf) {
-                Err(_) => break, // lop off any trailing bytes
-                Ok(_) => (), // we'll use the buffer below
+                Err(_) => panic!("Error on reading byes during parse {:?}", buf),
+                Ok(remaining) => {
+                    if remaining == 0 { break ; }
+
+                    println!("DEBUG: read [{:x}, {:x}]", buf[0], buf[1]);
+
+                    let u : u16;
+                    u = ((buf[0] as u16) << 15) | (buf[1] as u16);
+                    v.push(u);
+
+                },
             }
 
-            let u : u16;
-            u = ((buf[0] as u16) << 15) | (buf[1] as u16);
-            v.push(u);
         }
 
         while !v.is_empty() {

@@ -4,8 +4,6 @@ use register::Register;
 use address::Address;
 use argument::Argument;
 
-use constants::*;
-
 
 /// Represents a machine instruction
 #[derive(Debug, PartialEq, Eq)]
@@ -188,6 +186,7 @@ impl fmt::Display for Instruction {
 
 #[cfg(test)]
 mod tests {
+    use constants::*;
     use super::*;
 
     mod display {

@@ -14,3 +14,4 @@ name="syn-dis"
 path = "src/bin/disassembler.rs"
 
 [dependencies]
+clap = "2.29.0"
