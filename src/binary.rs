@@ -2,15 +2,18 @@ use std::fs::File;
 use std::io::prelude::*;
 
 use instruction::Instruction;
+use argument::Argument;
 
+#[derive(PartialEq, Eq, Debug)]
 pub struct Binary {
     file: String,
-    pub instructions: Vec<Instruction>, // don't leave this public
+    instructions: Vec<Instruction>,
+    binary: Vec<u16>,
 }
 
 impl Binary {
     pub fn new(filepath: &String) -> Binary {
-        Binary { file: filepath.to_owned(), instructions: vec![] }
+        Binary { file: filepath.to_owned(), instructions: vec![], binary: vec![] }
     }
 
     pub fn parse(&mut self) {
@@ -21,29 +24,31 @@ impl Binary {
 
         let mut v: Vec<u16> = vec![];
         let mut buf = [0u8; 2];
+        let mut debug_idx = 0;
         loop {
             match f.read(&mut buf) {
                 Err(_) => panic!("Error on reading byes during parse {:?}", buf),
                 Ok(remaining) => {
                     if remaining == 0 { break ; }
 
-                    println!("DEBUG: read [{:x}, {:x}]", buf[0], buf[1]);
-
                     let u : u16;
-                    u = ((buf[0] as u16) << 15) | (buf[1] as u16);
+                    u = ((buf[1] as u16) << 8) | (buf[0] as u16);
                     v.push(u);
-
+                    self.binary.push(u);
                 },
             }
-
+            debug_idx += 1;
         }
+
 
         while !v.is_empty() {
             let opcode = v.remove(1);
             let mut instruction = vec![opcode];
-            // XXX: this is a hack for the minute. When I come back around to building the asm/dasm,
-            // I'll fix this.
-            let arg_count = Instruction::arg_count(opcode).unwrap(); 
+
+            let arg_count = match Instruction::arg_count(opcode) {
+                Some(a) => a,
+                None => break
+            };
 
             for _ in 0..arg_count {
                 instruction.push(v.remove(1));
@@ -52,5 +57,13 @@ impl Binary {
             // XXX: more hax
             self.instructions.push(Instruction::from_u16_sequence(&instruction).unwrap());
         }
+    }
+
+    pub fn instructions(&self) -> &Vec<Instruction> {
+        &self.instructions
+    }
+
+    pub fn binary(&self) -> &Vec<u16> {
+        &self.binary
     }
 }

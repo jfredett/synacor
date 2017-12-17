@@ -29,7 +29,7 @@ fn main() {
     println!("Parsing `{}'", bin_path);
     b.parse();
 
-    for instruction in b.instructions {
-        println!("{}", instruction);
-    }
+    //for instruction in b.instructions {
+        //println!("{}", instruction);
+    //}
 }

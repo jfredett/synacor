@@ -1,3 +1,5 @@
+use std::convert::From;
+
 //use u15::u15;
 use address::Address;
 use argument::Argument;
@@ -5,7 +7,7 @@ use instruction::Instruction;
 use constants::*;
 
 
-struct VM {
+pub struct VM {
     instruction_pointer: Address,
     stack: Vec<u16>,
     memory: [u16; U15_MAX as usize],
@@ -14,13 +16,13 @@ struct VM {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
-enum VMState {
+pub enum VMState {
     RUN,
     HALT
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
-enum VMError {
+pub enum VMError {
     BadOpcode(u16),
     InvalidMemoryAccess(Address),
     MalformedInstruction(Vec<u16>)
@@ -51,6 +53,7 @@ impl VM {
 
     pub fn run(&mut self, start_position: Address) -> Result<VMState, VMError> {
         self.instruction_pointer = start_position;
+        self.current_state = VMState::RUN;
 
         while self.is_running() {
             match self.step() {
@@ -89,10 +92,12 @@ impl VM {
     ///
     /// TODO: make this write to a buffer held in the VM struct
     fn write_output(&self, arg: Argument) {
-        match arg {
-            Argument::Literal(v) => print!("{}", v),
-            Argument::Register(r) => print!("{}", self.registers[r.as_index()])
+        let chr = match arg {
+            Argument::Literal(v) => char::from(v.0 as u8),
+            Argument::Register(r) => char::from(self.registers[r.as_index()] as u8)
         };
+
+        print!("{}", chr);
     }
 
     fn write_memory(&mut self, address: &Address, value: u16) {
