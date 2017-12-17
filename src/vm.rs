@@ -89,19 +89,36 @@ impl VM {
 
     fn execute_instruction(&mut self, instruction: Instruction) -> VMResult {
        match instruction {
-           Instruction::OUT(a)       => self.write_output(a),
-           Instruction::JMP(a)       => self.jump(a),
-           Instruction::NOOP         => Ok(VMState::RUN),
            Instruction::HALT         => Ok(VMState::HALT),
+           Instruction::JMP(a)       => self.jump(a),
+           Instruction::SET(r,a)     => self.write_register(r, a),
+           Instruction::JT(a,b)      => {
+               if self.check_true(a) { return self.jump(b); }
+               Ok(VMState::RUN)
+           }
+           Instruction::JF(a,b)      => {
+               if !self.check_true(a) { return self.jump(b); }
+               Ok(VMState::RUN)
+           }
+           Instruction::NOOP         => Ok(VMState::RUN),
+           Instruction::OUT(a)       => self.write_output(a),
            _                         => Err(VMError::BadInstruction(instruction)) // any unrecognized opcode halts.
        }
     }
 
-    fn jump(&mut self, arg: Argument) -> VMResult {
+    fn check_true(&self, arg: Argument) -> bool {
         let target = match arg {
             Argument::Literal(v) => v.0,
             Argument::Register(r) => self.read_register(r)
         };
+
+        return target == 1;
+    }
+
+
+    /// Jump to the address given by the argument.
+    fn jump(&mut self, arg: Argument) -> VMResult {
+        let target = self.parse_argument(arg);
 
         let addr = Address::new(target);
 
@@ -115,15 +132,19 @@ impl VM {
         }
     }
 
+    /// extract the value of an argument, either reading the register, or interpreting as a literal
+    fn parse_argument(&self, arg: Argument) -> u16 {
+        match arg {
+            Argument::Literal(v) => v.0,
+            Argument::Register(r) => self.read_register(r)
+        }
+    }
+
     /// writes the argument to stdout
     ///
     /// TODO: make this write to a buffer held in the VM struct
     fn write_output(&self, arg: Argument) -> VMResult {
-
-        let chr = match arg {
-            Argument::Literal(v) => char::from(v.0 as u8),
-            Argument::Register(r) => char::from(self.read_register(r) as u8)
-        };
+        let chr = char::from(self.parse_argument(arg) as u8);
 
         if !chr.is_ascii() { return Err(VMError::InvalidCharacterArgument(arg)); }
 
@@ -132,10 +153,21 @@ impl VM {
         Ok(VMState::RUN)
     }
 
+    /// read the value stored in the given register
     fn read_register(&self, r: Register) -> u16 {
         return self.registers[r.as_index()];
     }
 
+    /// write the given value to the given register
+    fn write_register(&mut self, r: Register, a: Argument) -> VMResult {
+        let arg = self.parse_argument(a);
+
+        self.registers[r.as_index()] = arg;
+
+        Ok(VMState::RUN)
+    }
+
+    /// write the given value at the given address in memory.
     fn write_memory(&mut self, address: &Address, value: u16) {
         self.memory[address.value() as usize] = value;
     }
@@ -223,6 +255,41 @@ mod tests {
     mod instructions {
         use super::*;
 
+        mod set {
+            use super::*;
+
+
+            #[test]
+            fn happy_lit() {
+                let mut vm = VM::init();
+                let mut program = vec![];
+                program.append(&mut Instruction::SET(Register::R0, Argument::new(15)).to_u16_sequence());
+
+                vm.load_program(Address::new(0), &program);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 15);
+            }
+
+            #[test]
+            fn happy_reg() {
+                let mut vm = VM::init();
+                let mut program = vec![];
+                program.append(&mut Instruction::SET(Register::R0, Argument::new(15)).to_u16_sequence());
+                program.append(&mut Instruction::SET(Register::R1, Argument::new(REGISTER_0)).to_u16_sequence());
+
+                vm.load_program(Address::new(0), &program);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 15);
+                assert_eq!(vm.registers[1], 15);
+            }
+        }
+
         mod jump {
             use super::*;
 
@@ -232,7 +299,8 @@ mod tests {
                 let program = Instruction::JMP(Argument::new(10)).to_u16_sequence();
                 vm.load_program(Address::new(0), &program);
 
-                vm.run(Address::new(0));
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
 
                 // it goes to @11 because it has to read the halt instruction at @10.
                 assert_eq!(vm.instruction_pointer, Address::new(11));
@@ -247,21 +315,17 @@ mod tests {
                 let mut vm = VM::init();
                 let mut program = vec![];
 
-                // Fails because 'SET' isn't implemented.
-                //program.append(&mut Instruction::SET(Register::R0, Argument::new(15)).to_u16_sequence());
-                // FIXME: So we'll do it manually for now
-                vm.registers[0] = 15;
-
+                program.append(&mut Instruction::SET(Register::R0, Argument::new(15)).to_u16_sequence());
                 program.append(&mut Instruction::JMP(Argument::new(REGISTER_0)).to_u16_sequence());
 
                 vm.load_program(Address::new(0), &program);
 
-                vm.run(Address::new(0));
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
 
                 // it goes to @16 because it has to read the halt instruction at @15.
                 assert_eq!(vm.instruction_pointer, Address::new(16));
             }
-
         }
 
     }
@@ -271,26 +335,28 @@ mod tests {
 
         // XXX: Disabled while I run the given program with just the example instructions installed
         //#[test]
-        fn step() {
-            let mut vm = loaded_vm();
+        //fn step() {
+            //let mut vm = loaded_vm();
 
-            // force the instruction pointer to the beginning of the program
-            vm.instruction_pointer = Address::new(1000);
+            //// force the instruction pointer to the beginning of the program
+            //vm.instruction_pointer = Address::new(1000);
 
-            assert!(vm.stack.is_empty());
-            assert_eq!(vm.registers[0], 0);
-            assert_eq!(vm.registers[1], 0);
+            //assert!(vm.stack.is_empty());
+            //assert_eq!(vm.registers[0], 0);
+            //assert_eq!(vm.registers[1], 0);
 
-            vm.step();
+            //let result = vm.step();
 
-            assert!(vm.stack.is_empty());
-            assert_eq!(vm.registers[0], 4);
-            assert_eq!(vm.registers[1], 0);
+            //assert_eq!(result, Ok(VMState::HALT));
 
-            //vm.step();
+            //assert!(vm.stack.is_empty());
+            //assert_eq!(vm.registers[0], 4);
+            //assert_eq!(vm.registers[1], 0);
 
-            // this should output the ascii value '4' to an output stream
-        }
+            ////vm.step();
+
+            //// this should output the ascii value '4' to an output stream
+        //}
 
         #[test]
         fn advance() {
@@ -313,7 +379,7 @@ mod tests {
 
         #[test]
         fn read_memory_invalid() {
-            let mut vm = loaded_vm();
+            let vm = loaded_vm();
             let ptr = Address::new(40000);
             assert_eq!(vm.read_memory(&ptr), Err(VMError::InvalidMemoryAccess(ptr)));
         }

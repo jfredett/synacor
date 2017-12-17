@@ -2,7 +2,6 @@ use std::fs::File;
 use std::io::prelude::*;
 
 use instruction::Instruction;
-use argument::Argument;
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct Binary {

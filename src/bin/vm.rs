@@ -1,15 +1,14 @@
 extern crate synacor;
 extern crate clap;
 
+use std::str::FromStr;
+
 use clap::{Arg, App};
+
 use synacor::binary::Binary;
 use synacor::vm::VM;
 use synacor::address::Address;
 
-use std::io::prelude::*;
-use std::collections::HashMap;
-use std::str::FromStr;
-use std::cmp;
 
 fn parse_as<T : FromStr>(input: &String) -> T {
   let parsed : Result<T, T::Err> = input.trim().parse();
