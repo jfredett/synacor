@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use std::num::ParseIntError;
+use std::fmt;
 
 use register::Register;
 use u15::u15;
@@ -27,14 +27,26 @@ impl From<u16> for Address {
    }
 }
 
+
+impl fmt::Display for Address {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "@{}", self.value())
+    }
+}
+
+pub struct ParseAddressError;
+
 impl FromStr for Address {
-    type Err = ParseIntError;
+    type Err = ParseAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let v_res = u16::from_str(s);
-        return match v_res {
-            Ok(v) => Ok(Address::from(v)),
-            Err(e) => Err(e)
+        if s.starts_with("@") { return Err(ParseAddressError); }
+        else {
+            let v_res = u16::from_str(s.trim_left_matches("@"));
+            return match v_res {
+                Ok(v) => Ok(Address::from(v)),
+                Err(_) => Err(ParseAddressError)
+            }
         }
     }
 }

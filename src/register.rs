@@ -1,3 +1,5 @@
+use std::fmt;
+
 use address::Address;
 use constants::*;
 
@@ -42,6 +44,23 @@ impl Register {
 
     pub fn to_u16(&self) -> u16 {
         self.as_address().value()
+    }
+}
+
+
+impl fmt::Display for Register {
+
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        return match *self {
+            Register::R0 => write!(f, "R0"),
+            Register::R1 => write!(f, "R1"),
+            Register::R2 => write!(f, "R2"),
+            Register::R3 => write!(f, "R3"),
+            Register::R4 => write!(f, "R4"),
+            Register::R5 => write!(f, "R5"),
+            Register::R6 => write!(f, "R6"),
+            Register::R7 => write!(f, "R7"),
+        }
     }
 }
 

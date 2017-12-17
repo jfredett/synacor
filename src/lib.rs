@@ -18,4 +18,5 @@ pub mod register;
 pub mod u15;
 pub mod instruction;
 pub mod argument;
+pub mod binary;
 

@@ -1,3 +1,5 @@
+use std::fmt;
+
 use u15::u15;
 use register::Register;
 use constants::*;
@@ -21,6 +23,15 @@ impl Argument {
             return Argument::Register(Register::new(u));
         } else {
             return Argument::Literal(u15(u));
+        }
+    }
+}
+
+impl fmt::Display for Argument {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        return match self {
+            &Argument::Literal(ref u) => write!(f, "{}", u),
+            &Argument::Register(ref r) => write!(f, "{}", r)
         }
     }
 }

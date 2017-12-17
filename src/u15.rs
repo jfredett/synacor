@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ops::*;
 use constants::*;
 
@@ -6,7 +7,6 @@ use constants::*;
 #[allow(non_camel_case_types)]
 pub struct u15(pub u16);
 
-
 impl u15 {
     pub const fn min_value() -> u15 {
         return u15(0);
@@ -14,6 +14,12 @@ impl u15 {
 
     pub const fn max_value() -> u15 {
         return u15(MODULUS - 1);
+    }
+}
+
+impl fmt::Display for u15 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.fmt(f)
     }
 }
 

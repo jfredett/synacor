@@ -1,3 +1,5 @@
+use std::fmt;
+
 use register::Register;
 use address::Address;
 use argument::Argument;
@@ -7,7 +9,7 @@ use constants::*;
 
 /// Represents a machine instruction
 #[derive(Debug, PartialEq, Eq)]
-enum Instruction {
+pub enum Instruction {
     HALT,
     SET(Register, Argument),
     PUSH(Argument),
@@ -35,30 +37,31 @@ enum Instruction {
 impl Instruction {
 
     /// The number of arguments a given opcode takes
-    pub fn arg_count(self) -> u8 {
-        match self {
-            Instruction::HALT          => 0,
-            Instruction::SET(_, _)     => 2,
-            Instruction::PUSH(_)       => 1,
-            Instruction::POP(_)        => 1,
-            Instruction::EQ(_, _, _)   => 3,
-            Instruction::GT(_, _, _)   => 3,
-            Instruction::JMP(_)        => 1,
-            Instruction::JT(_, _)      => 2,
-            Instruction::JF(_, _)      => 2,
-            Instruction::ADD(_, _, _)  => 3,
-            Instruction::MULT(_, _, _) => 3,
-            Instruction::MOD(_, _, _)  => 3,
-            Instruction::AND(_, _, _)  => 3,
-            Instruction::OR(_, _, _)   => 3,
-            Instruction::NOT(_, _)     => 2,
-            Instruction::RMEM(_, _)    => 2,
-            Instruction::WMEM(_, _)    => 2,
-            Instruction::CALL(_)       => 1,
-            Instruction::RET           => 0,
-            Instruction::OUT(_)        => 1,
-            Instruction::IN(_)         => 1,
-            Instruction::NOOP          => 0
+    pub fn arg_count(opcode: u16) -> usize {
+        match opcode {
+            0 => 0,
+            1 => 2,
+            2 => 1,
+            3 => 1,
+            4 => 3,
+            5 => 3,
+            6 => 1,
+            7 => 2,
+            8 => 2,
+            9 => 3,
+            10 => 3,
+            11 => 3,
+            12 => 3,
+            13 => 3,
+            14 => 2,
+            15 => 2,
+            16 => 2,
+            17 => 1,
+            18 => 0,
+            19 => 1,
+            20 => 1,
+            21 => 0,
+            _ =>  panic!("Unrecognized opcode: ``{}''", opcode)
         }
     }
 
@@ -124,21 +127,485 @@ impl Instruction {
             _ =>  panic!("Unrecognized opcode: ``{}''", opcode)
         }
     }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Instruction::HALT           => "HALT",
+            Instruction::SET(_, _)      => "SET",
+            Instruction::PUSH(_)        => "PUSH",
+            Instruction::POP(_)         => "POP",
+            Instruction::EQ(_, _, _)    => "EQ",
+            Instruction::GT(_, _, _)    => "GT",
+            Instruction::JMP(_)         => "JMP",
+            Instruction::JT(_, _)       => "JT",
+            Instruction::JF(_, _)       => "JF",
+            Instruction::ADD(_, _, _)   => "ADD",
+            Instruction::MULT(_, _, _)  => "MULT",
+            Instruction::MOD(_, _, _)   => "MOD",
+            Instruction::AND(_, _, _)   => "AND",
+            Instruction::OR(_, _, _)    => "OR",
+            Instruction::NOT(_, _)      => "NOT",
+            Instruction::RMEM(_, _)     => "RMEM",
+            Instruction::WMEM(_, _)     => "WMEM",
+            Instruction::CALL(_)        => "CALL",
+            Instruction::RET            => "RET",
+            Instruction::OUT(_)         => "OUT",
+            Instruction::IN(_)          => "IN",
+            Instruction::NOOP           => "NOOP"
+        }
+    }
 }
 
-// impl Display for Instruction
-// ^-- should take an Instruction and produce an nicely formatted ASM-like thing, eg:
-//
-// HALT
-// PUSH R7
-// EQ R1 R7 R8
-// JT 100
-// JF 200
-// etc
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &Instruction::HALT                      => write!(f, "HALT"),
+            &Instruction::SET(ref r, ref a)         => write!(f, "SET {} {}", r, a),
+            &Instruction::PUSH(ref a)               => write!(f, "PUSH {}", a),
+            &Instruction::POP(ref r)                => write!(f, "POP {}", r),
+            &Instruction::EQ(ref r, ref a, ref b)   => write!(f, "EQ {} {} {}", r, a, b),
+            &Instruction::GT(ref r, ref a, ref b)   => write!(f, "GT {} {} {}", r, a, b),
+            &Instruction::JMP(ref a)                => write!(f, "JMP {}", a),
+            &Instruction::JT(ref a, ref b)          => write!(f, "JT {} {}", a, b),
+            &Instruction::JF(ref a, ref b)          => write!(f, "JF {} {}", a, b),
+            &Instruction::ADD(ref r, ref a, ref b)  => write!(f, "ADD {} {} {}", r, a, b),
+            &Instruction::MULT(ref r, ref a, ref b) => write!(f, "MULT {} {} {}", r, a, b),
+            &Instruction::MOD(ref r, ref a, ref b)  => write!(f, "MOD {} {} {}", r, a, b),
+            &Instruction::AND(ref r, ref a, ref b)  => write!(f, "AND {} {} {}", r, a, b),
+            &Instruction::OR(ref r, ref a, ref b)   => write!(f, "OR {} {} {}", r, a, b),
+            &Instruction::NOT(ref r, ref a)         => write!(f, "NOT {} {}", r, a),
+            &Instruction::RMEM(ref r, ref a)        => write!(f, "RMEM {} {}", r, a),
+            &Instruction::WMEM(ref a, ref arg)      => write!(f, "WMEM {} {}", a, arg),
+            &Instruction::CALL(ref a)               => write!(f, "CALL {}", a),
+            &Instruction::RET                       => write!(f, "RET"),
+            &Instruction::OUT(ref u)                => write!(f, "OUT {}", u),
+            &Instruction::IN(ref a)                 => write!(f, "IN {}", a),
+            &Instruction::NOOP                      => write!(f, "NOOP"),
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    mod display {
+        use super::*;
+
+        mod halt {
+            use super::*;
+
+            #[test]
+            fn test() { 
+                let s = format!("{}", Instruction::HALT);
+                assert_eq!(s, "HALT");
+            }
+        }
+
+        mod set {
+            use super::*;
+
+            #[test]
+            fn lit() {
+                let s = format!("{}", Instruction::SET(Register::R0, Argument::new(123)));
+                assert_eq!(s, "SET R0 123");
+            }
+
+            #[test]
+            fn reg() {
+                let s = format!("{}", Instruction::SET(Register::R0, Argument::new(REGISTER_1)));
+                assert_eq!(s, "SET R0 R1");
+            }
+        }
+
+        mod push {
+            use super::*;
+
+            #[test]
+            fn lit() {
+                let s = format!("{}", Instruction::PUSH( Argument::new(123)));
+                assert_eq!(s, "PUSH 123");
+            }
+
+            #[test]
+            fn reg() {
+                let s = format!("{}", Instruction::PUSH( Argument::new(REGISTER_1)));
+                assert_eq!(s, "PUSH R1");
+            }
+        }
+
+        mod pop {
+            use super::*;
+
+            #[test]
+            fn reg() {
+                let s = format!("{}", Instruction::POP(Register::R0));
+                assert_eq!(s, "POP R0");
+            }
+        }
+
+        mod eq {
+            use super::*;
+
+            #[test]
+            fn lit_lit() {
+                let s = format!("{}", Instruction::EQ(Register::R0, Argument::new(456), Argument::new(123)));
+                assert_eq!(s, "EQ R0 456 123");
+            }
+
+            #[test]
+            fn lit_reg() {
+                let s = format!("{}", Instruction::EQ(Register::R0, Argument::new(456), Argument::new(REGISTER_1)));
+                assert_eq!(s, "EQ R0 456 R1");
+            }
+
+            #[test]
+            fn reg_lit() {
+                let s = format!("{}", Instruction::EQ(Register::R0, Argument::new(REGISTER_7), Argument::new(123)));
+                assert_eq!(s, "EQ R0 R7 123");
+            }
+
+            #[test]
+            fn reg_reg() {
+                let s = format!("{}", Instruction::EQ(Register::R0, Argument::new(REGISTER_3), Argument::new(REGISTER_5)));
+                assert_eq!(s, "EQ R0 R3 R5");
+            }
+        }
+
+        mod gt {
+            use super::*;
+
+            #[test]
+            fn lit_lit() {
+                let s = format!("{}", Instruction::GT(Register::R0, Argument::new(456), Argument::new(123)));
+                assert_eq!(s, "GT R0 456 123");
+            }
+
+            #[test]
+            fn lit_reg() {
+                let s = format!("{}", Instruction::GT(Register::R0, Argument::new(456), Argument::new(REGISTER_1)));
+                assert_eq!(s, "GT R0 456 R1");
+            }
+
+            #[test]
+            fn reg_lit() {
+                let s = format!("{}", Instruction::GT(Register::R0, Argument::new(REGISTER_7), Argument::new(123)));
+                assert_eq!(s, "GT R0 R7 123");
+            }
+
+            #[test]
+            fn reg_reg() {
+                let s = format!("{}", Instruction::GT(Register::R0, Argument::new(REGISTER_3), Argument::new(REGISTER_5)));
+                assert_eq!(s, "GT R0 R3 R5");
+            }
+        }
+
+        mod jmp {
+            use super::*;
+
+            #[test]
+            fn lit() {
+                let s = format!("{}", Instruction::JMP( Argument::new(123)));
+                assert_eq!(s, "JMP 123");
+            }
+
+            #[test]
+            fn reg() {
+                let s = format!("{}", Instruction::JMP( Argument::new(REGISTER_1)));
+                assert_eq!(s, "JMP R1");
+            }
+        }
+
+        mod jt {
+            use super::*;
+
+            #[test]
+            fn lit_lit() {
+                let s = format!("{}", Instruction::JT(Argument::new(456), Argument::new(123)));
+                assert_eq!(s, "JT 456 123");
+            }
+
+            #[test]
+            fn lit_reg() {
+                let s = format!("{}", Instruction::JT(Argument::new(456), Argument::new(REGISTER_1)));
+                assert_eq!(s, "JT 456 R1");
+            }
+
+            #[test]
+            fn reg_lit() {
+                let s = format!("{}", Instruction::JT(Argument::new(REGISTER_7), Argument::new(123)));
+                assert_eq!(s, "JT R7 123");
+            }
+
+            #[test]
+            fn reg_reg() {
+                let s = format!("{}", Instruction::JT(Argument::new(REGISTER_3), Argument::new(REGISTER_5)));
+                assert_eq!(s, "JT R3 R5");
+            }
+        }
+
+        mod jf {
+            use super::*;
+
+            #[test]
+            fn lit_lit() {
+                let s = format!("{}", Instruction::JF(Argument::new(456), Argument::new(123)));
+                assert_eq!(s, "JF 456 123");
+            }
+
+            #[test]
+            fn lit_reg() {
+                let s = format!("{}", Instruction::JF(Argument::new(456), Argument::new(REGISTER_1)));
+                assert_eq!(s, "JF 456 R1");
+            }
+
+            #[test]
+            fn reg_lit() {
+                let s = format!("{}", Instruction::JF(Argument::new(REGISTER_7), Argument::new(123)));
+                assert_eq!(s, "JF R7 123");
+            }
+
+            #[test]
+            fn reg_reg() {
+                let s = format!("{}", Instruction::JF(Argument::new(REGISTER_3), Argument::new(REGISTER_5)));
+                assert_eq!(s, "JF R3 R5");
+            }
+        }
+
+        mod add {
+            use super::*;
+
+            #[test]
+            fn lit_lit() {
+                let s = format!("{}", Instruction::ADD(Register::R0, Argument::new(456), Argument::new(123)));
+                assert_eq!(s, "ADD R0 456 123");
+            }
+
+            #[test]
+            fn lit_reg() {
+                let s = format!("{}", Instruction::ADD(Register::R0, Argument::new(456), Argument::new(REGISTER_1)));
+                assert_eq!(s, "ADD R0 456 R1");
+            }
+
+            #[test]
+            fn reg_lit() {
+                let s = format!("{}", Instruction::ADD(Register::R0, Argument::new(REGISTER_7), Argument::new(123)));
+                assert_eq!(s, "ADD R0 R7 123");
+            }
+
+            #[test]
+            fn reg_reg() {
+                let s = format!("{}", Instruction::ADD(Register::R0, Argument::new(REGISTER_3), Argument::new(REGISTER_5)));
+                assert_eq!(s, "ADD R0 R3 R5");
+            }
+        }
+
+        mod mult {
+            use super::*;
+
+            #[test]
+            fn lit_lit() {
+                let s = format!("{}", Instruction::MULT(Register::R0, Argument::new(456), Argument::new(123)));
+                assert_eq!(s, "MULT R0 456 123");
+            }
+
+            #[test]
+            fn lit_reg() {
+                let s = format!("{}", Instruction::MULT(Register::R0, Argument::new(456), Argument::new(REGISTER_1)));
+                assert_eq!(s, "MULT R0 456 R1");
+            }
+
+            #[test]
+            fn reg_lit() {
+                let s = format!("{}", Instruction::MULT(Register::R0, Argument::new(REGISTER_7), Argument::new(123)));
+                assert_eq!(s, "MULT R0 R7 123");
+            }
+
+            #[test]
+            fn reg_reg() {
+                let s = format!("{}", Instruction::MULT(Register::R0, Argument::new(REGISTER_3), Argument::new(REGISTER_5)));
+                assert_eq!(s, "MULT R0 R3 R5");
+            }
+        }
+
+        mod modulo {
+            use super::*;
+
+            #[test]
+            fn lit_lit() {
+                let s = format!("{}", Instruction::MOD(Register::R0, Argument::new(456), Argument::new(123)));
+                assert_eq!(s, "MOD R0 456 123");
+            }
+
+            #[test]
+            fn lit_reg() {
+                let s = format!("{}", Instruction::MOD(Register::R0, Argument::new(456), Argument::new(REGISTER_1)));
+                assert_eq!(s, "MOD R0 456 R1");
+            }
+
+            #[test]
+            fn reg_lit() {
+                let s = format!("{}", Instruction::MOD(Register::R0, Argument::new(REGISTER_7), Argument::new(123)));
+                assert_eq!(s, "MOD R0 R7 123");
+            }
+
+            #[test]
+            fn reg_reg() {
+                let s = format!("{}", Instruction::MOD(Register::R0, Argument::new(REGISTER_3), Argument::new(REGISTER_5)));
+                assert_eq!(s, "MOD R0 R3 R5");
+            }
+        }
+
+        mod and {
+            use super::*;
+
+            #[test]
+            fn lit_lit() {
+                let s = format!("{}", Instruction::AND(Register::R0, Argument::new(456), Argument::new(123)));
+                assert_eq!(s, "AND R0 456 123");
+            }
+
+            #[test]
+            fn lit_reg() {
+                let s = format!("{}", Instruction::AND(Register::R0, Argument::new(456), Argument::new(REGISTER_1)));
+                assert_eq!(s, "AND R0 456 R1");
+            }
+
+            #[test]
+            fn reg_lit() {
+                let s = format!("{}", Instruction::AND(Register::R0, Argument::new(REGISTER_7), Argument::new(123)));
+                assert_eq!(s, "AND R0 R7 123");
+            }
+
+            #[test]
+            fn reg_reg() {
+                let s = format!("{}", Instruction::AND(Register::R0, Argument::new(REGISTER_3), Argument::new(REGISTER_5)));
+                assert_eq!(s, "AND R0 R3 R5");
+            }
+        }
+
+        mod or {
+            use super::*;
+
+            #[test]
+            fn lit_lit() {
+                let s = format!("{}", Instruction::OR(Register::R0, Argument::new(456), Argument::new(123)));
+                assert_eq!(s, "OR R0 456 123");
+            }
+
+            #[test]
+            fn lit_reg() {
+                let s = format!("{}", Instruction::OR(Register::R0, Argument::new(456), Argument::new(REGISTER_1)));
+                assert_eq!(s, "OR R0 456 R1");
+            }
+
+            #[test]
+            fn reg_lit() {
+                let s = format!("{}", Instruction::OR(Register::R0, Argument::new(REGISTER_7), Argument::new(123)));
+                assert_eq!(s, "OR R0 R7 123");
+            }
+
+            #[test]
+            fn reg_reg() {
+                let s = format!("{}", Instruction::OR(Register::R0, Argument::new(REGISTER_3), Argument::new(REGISTER_5)));
+                assert_eq!(s, "OR R0 R3 R5");
+            }
+        }
+
+        mod not {
+            use super::*;
+
+            #[test]
+            fn lit() {
+                let s = format!("{}", Instruction::NOT(Register::R0, Argument::new(123)));
+                assert_eq!(s, "NOT R0 123");
+            }
+
+            #[test]
+            fn reg() {
+                let s = format!("{}", Instruction::NOT(Register::R0, Argument::new(REGISTER_1)));
+                assert_eq!(s, "NOT R0 R1");
+            }
+        }
+
+        mod rmem {
+            use super::*;
+
+            #[test]
+            fn rmem() {
+                let s = format!("{}", Instruction::RMEM(Register::R0, Address::new(123)));
+                assert_eq!(s, "RMEM R0 @123");
+            }
+
+        }
+
+        mod wmem {
+            use super::*;
+
+            #[test]
+            fn lit() {
+                let s = format!("{}", Instruction::WMEM(Address::new(1231), Argument::new(123)));
+                assert_eq!(s, "WMEM @1231 123");
+            }
+
+            #[test]
+            fn reg() {
+                let s = format!("{}", Instruction::WMEM(Address::new(1231), Argument::new(REGISTER_1)));
+                assert_eq!(s, "WMEM @1231 R1");
+            }
+        }
+
+        mod call {
+            use super::*;
+
+            #[test]
+            fn test() { 
+                let s = format!("{}", Instruction::CALL(Address::new(1231)));
+                assert_eq!(s, "CALL @1231");
+            }
+        }
+
+        mod ret {
+            use super::*;
+
+            #[test]
+            fn test() { 
+                let s = format!("{}", Instruction::RET);
+                assert_eq!(s, "RET");
+            }
+        }
+
+        mod out {
+            use super::*;
+
+            #[test]
+            fn test() { 
+                let s = format!("{}", Instruction::OUT(123));
+                assert_eq!(s, "OUT 123");
+            }
+        }
+
+        mod in_val {
+            use super::*;
+
+            #[test]
+            fn test() { 
+                let s = format!("{}", Instruction::IN(Address::new(123)));
+                assert_eq!(s, "IN @123");
+            }
+        }
+
+        mod noop {
+            use super::*;
+
+            #[test]
+            fn test() { 
+                let s = format!("{}", Instruction::NOOP);
+                assert_eq!(s, "NOOP");
+            }
+        }
+    }
 
     mod to_u16_sequence {
         use super::*;
