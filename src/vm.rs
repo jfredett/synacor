@@ -30,6 +30,7 @@ pub enum VMError {
     MalformedInstruction(Vec<u16>),
     InvalidCharacterArgument(Argument),
     JumpOutOfBounds(Address),
+    StackUnderflow,
     UnknownError
 }
 
@@ -101,6 +102,8 @@ impl VM {
     fn execute_instruction(&mut self, instruction: Instruction) -> VMResult {
        match instruction {
            Instruction::HALT         => Ok(VMState::HALT),
+           Instruction::PUSH(arg)    => self.push(arg),
+           Instruction::POP(r)       => self.pop(r),
            Instruction::JMP(a)       => self.jump(a),
            Instruction::SET(r,a)     => self.write_register(r, a),
            Instruction::EQ(r, arg_a, arg_b)   => {
@@ -133,6 +136,21 @@ impl VM {
        }
     }
 
+    /// Pop a value off the stack, put it in given register
+    fn pop(&mut self, r: Register) -> VMResult {
+        match self.stack.pop() {
+          Some(v) => self.write_register(r, Argument::new(v)),
+          None => Err(VMError::StackUnderflow)
+        }
+    }
+
+    /// Push the given argument onto the stack
+    fn push(&mut self, arg: Argument) -> VMResult {
+        let v = self.parse_argument(arg);
+        self.stack.push(v);
+
+        Ok(VMState::RUN)
+    }
 
     fn check_true(&self, arg: Argument) -> bool {
         let target = match arg {
@@ -655,6 +673,87 @@ mod tests {
             }
         }
 
+        mod push {
+            use super::*;
+
+            #[test]
+            fn lit() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::PUSH(Argument::new(10))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.stack[0], 10);
+            }
+
+            #[test]
+            fn reg() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(3)),
+                    Instruction::PUSH(Argument::new(REGISTER_0))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.stack[0], 3);
+            }
+        }
+
+        mod pop {
+            use super::*;
+
+            #[test]
+            fn happy() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::PUSH(Argument::new(10)),
+                    Instruction::POP(Register::R0)
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 10);
+            }
+
+            #[test]
+            fn nonempty_remaining_stack() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::PUSH(Argument::new(1)),
+                    Instruction::PUSH(Argument::new(2)),
+                    Instruction::POP(Register::R0)
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 2);
+                assert!(vm.stack.len() == 1);
+            }
+
+            #[test]
+            fn stack_underflow_error() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::POP(Register::R0)
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Err(VMError::StackUnderflow));
+
+            }
+        }
     }
 
     mod step {
