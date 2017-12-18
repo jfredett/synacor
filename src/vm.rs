@@ -140,6 +140,12 @@ impl VM {
 
                self.write_register(r, Argument::Literal(a + b))
            },
+           Instruction::AND(r, arg_a, arg_b)   => {
+               let a : u15 = u15(self.parse_argument(arg_a));
+               let b : u15 = u15(self.parse_argument(arg_b));
+
+               self.write_register(r, Argument::Literal(a & b))
+           },
            Instruction::OUT(a)       => self.write_output(a),
            Instruction::NOOP         => Ok(VMState::RUN),
            _                         => Err(VMError::BadInstruction(instruction)) // any unrecognized opcode halts.
@@ -454,8 +460,64 @@ mod tests {
             }
         }
 
-        mod add {
+        mod and {
+            use super::*;
 
+            #[test]
+            fn lit_lit() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::AND(Register::R0, Argument::new(2), Argument::new(2))
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 2);
+            }
+
+
+            #[test]
+            fn lit_reg() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                        Instruction::SET(Register::R1, Argument::new(15)),
+                        Instruction::AND(Register::R0, Argument::new(4), Argument::new(REGISTER_1))
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 15 & 4);
+            }
+
+            #[test]
+            fn reg_lit() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R1, Argument::new(15)),
+                    Instruction::AND(Register::R0, Argument::new(REGISTER_1), Argument::new(2)) 
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 15 & 2);
+            }
+
+            #[test]
+            fn reg_reg() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R1, Argument::new(15)),
+                    Instruction::SET(Register::R0, Argument::new(2)),
+                    Instruction::AND(Register::R0, Argument::new(REGISTER_1), Argument::new(REGISTER_0)) 
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 15 & 2);
+            }
+        }
+
+        mod add {
             use super::*;
 
             #[test]
