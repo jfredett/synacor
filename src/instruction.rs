@@ -23,8 +23,8 @@ pub enum Instruction {
     AND(Register, Argument, Argument),
     OR(Register, Argument, Argument),
     NOT(Register, Argument),
-    RMEM(Register, Address), // FIXME: This should be register/arg
-    WMEM(Address, Argument), // FIXME: This should be an Arg/Arg, not Add/Arg
+    RMEM(Register, Argument),
+    WMEM(Argument, Argument),
     CALL(Argument),
     RET,
     OUT(Argument),
@@ -112,8 +112,8 @@ impl Instruction {
             12 => Some(Instruction::AND(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3]))),
             13 => Some(Instruction::OR(Register::new(seq[1]), Argument::new(seq[2]), Argument::new(seq[3]))),
             14 => Some(Instruction::NOT(Register::new(seq[1]), Argument::new(seq[2]))),
-            15 => Some(Instruction::RMEM(Register::new(seq[1]), Address::new(seq[2]))),
-            16 => Some(Instruction::WMEM(Address::new(seq[1]), Argument::new(seq[2]))),
+            15 => Some(Instruction::RMEM(Register::new(seq[1]), Argument::new(seq[2]))),
+            16 => Some(Instruction::WMEM(Argument::new(seq[1]), Argument::new(seq[2]))),
             17 => Some(Instruction::CALL(Argument::new(seq[1]))),
             18 => Some(Instruction::RET),
             19 => Some(Instruction::OUT(Argument::new(seq[1]))),
@@ -530,9 +530,15 @@ mod tests {
             use super::*;
 
             #[test]
-            fn rmem() {
-                let s = format!("{}", Instruction::RMEM(Register::R0, Address::new(123)));
-                assert_eq!(s, "RMEM R0 @123");
+            fn lit() {
+                let s = format!("{}", Instruction::RMEM(Register::R0, Argument::new(123)));
+                assert_eq!(s, "RMEM R0 123");
+            }
+
+            #[test]
+            fn reg() {
+                let s = format!("{}", Instruction::RMEM(Register::R0, Argument::new(REGISTER_1)));
+                assert_eq!(s, "RMEM R0 R1");
             }
 
         }
@@ -541,15 +547,27 @@ mod tests {
             use super::*;
 
             #[test]
-            fn lit() {
-                let s = format!("{}", Instruction::WMEM(Address::new(1231), Argument::new(123)));
-                assert_eq!(s, "WMEM @1231 123");
+            fn lit_lit() {
+                let s = format!("{}", Instruction::WMEM(Argument::new(1231), Argument::new(123)));
+                assert_eq!(s, "WMEM 1231 123");
             }
 
             #[test]
-            fn reg() {
-                let s = format!("{}", Instruction::WMEM(Address::new(1231), Argument::new(REGISTER_1)));
-                assert_eq!(s, "WMEM @1231 R1");
+            fn lit_reg() {
+                let s = format!("{}", Instruction::WMEM(Argument::new(1231), Argument::new(REGISTER_1)));
+                assert_eq!(s, "WMEM 1231 R1");
+            }
+
+            #[test]
+            fn reg_lit() {
+                let s = format!("{}", Instruction::WMEM(Argument::new(REGISTER_5), Argument::new(1)));
+                assert_eq!(s, "WMEM R5 1");
+            }
+
+            #[test]
+            fn reg_reg() {
+                let s = format!("{}", Instruction::WMEM(Argument::new(REGISTER_5), Argument::new(REGISTER_1)));
+                assert_eq!(s, "WMEM R5 R1");
             }
         }
 
@@ -994,9 +1012,15 @@ mod tests {
             use super::*;
 
             #[test]
-            fn rmem() {
-                let s = Instruction::RMEM(Register::new(REGISTER_0), Address::new(123));
+            fn lit() {
+                let s = Instruction::RMEM(Register::new(REGISTER_0), Argument::new(123));
                 assert_eq!(s.to_u16_sequence(), vec![15, REGISTER_0, 123]);
+            }
+
+            #[test]
+            fn reg() {
+                let s = Instruction::RMEM(Register::new(REGISTER_0), Argument::new(REGISTER_1));
+                assert_eq!(s.to_u16_sequence(), vec![15, REGISTER_0, REGISTER_1]);
             }
         }
 
@@ -1004,16 +1028,27 @@ mod tests {
             use super::*;
 
             #[test]
-            fn lit() {
-                let s = Instruction::WMEM(Address::new(123), Argument::new(456));
+            fn lit_lit() {
+                let s = Instruction::WMEM(Argument::new(123), Argument::new(456));
                 assert_eq!(s.to_u16_sequence(), vec![16, 123, 456]);
             }
 
+            #[test]
+            fn lit_reg() {
+                let s = Instruction::WMEM(Argument::new(123), Argument::new(REGISTER_0));
+                assert_eq!(s.to_u16_sequence(), vec![16, 123, REGISTER_0]);
+            }
 
             #[test]
-            fn reg() {
-                let s = Instruction::WMEM(Address::new(123), Argument::new(REGISTER_0));
-                assert_eq!(s.to_u16_sequence(), vec![16, 123, REGISTER_0]);
+            fn reg_lit() {
+                let s = Instruction::WMEM(Argument::new(REGISTER_0), Argument::new(456));
+                assert_eq!(s.to_u16_sequence(), vec![16, REGISTER_0, 456]);
+            }
+
+            #[test]
+            fn reg_reg() {
+                let s = Instruction::WMEM(Argument::new(REGISTER_1), Argument::new(REGISTER_0));
+                assert_eq!(s.to_u16_sequence(), vec![16, REGISTER_1, REGISTER_0]);
             }
         }
 
@@ -1465,8 +1500,15 @@ mod tests {
 
             #[test]
             fn lit() {
-                let s = Instruction::RMEM(Register::new(REGISTER_0), Address::new(123));
+                let s = Instruction::RMEM(Register::new(REGISTER_0), Argument::new(123));
                 let h = Instruction::from_u16_sequence(&vec![15, REGISTER_0, 123]).unwrap();
+                assert_eq!(s, h);
+            }
+
+            #[test]
+            fn reg() {
+                let s = Instruction::RMEM(Register::new(REGISTER_0), Argument::new(REGISTER_1));
+                let h = Instruction::from_u16_sequence(&vec![15, REGISTER_0, REGISTER_1]).unwrap();
                 assert_eq!(s, h);
             }
         }
@@ -1475,15 +1517,30 @@ mod tests {
             use super::*;
 
             #[test]
-            fn lit() {
-                let s = Instruction::WMEM(Address::new(123), Argument::new(456));
+            fn lit_lit() {
+                let s = Instruction::WMEM(Argument::new(123), Argument::new(456));
                 let h = Instruction::from_u16_sequence(&vec![16, 123, 456]).unwrap();
                 assert_eq!(s, h);
             }
 
             #[test]
-            fn reg() {
-                let s = Instruction::WMEM(Address::new(REGISTER_0), Argument::new(REGISTER_1));
+            fn lit_reg() {
+                let s = Instruction::WMEM(Argument::new(123), Argument::new(REGISTER_1));
+                let h = Instruction::from_u16_sequence(&vec![16, 123, REGISTER_1]).unwrap();
+                assert_eq!(s, h);
+            }
+
+            #[test]
+            fn reg_lit() {
+                let s = Instruction::WMEM(Argument::new(REGISTER_0), Argument::new(123));
+                let h = Instruction::from_u16_sequence(&vec![16, REGISTER_0, 123]).unwrap();
+                assert_eq!(s, h);
+            }
+
+
+            #[test]
+            fn reg_reg() {
+                let s = Instruction::WMEM(Argument::new(REGISTER_0), Argument::new(REGISTER_1));
                 let h = Instruction::from_u16_sequence(&vec![16, REGISTER_0, REGISTER_1]).unwrap();
                 assert_eq!(s, h);
             }

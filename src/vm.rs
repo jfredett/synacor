@@ -169,12 +169,32 @@ impl VM {
 
                self.write_register(r, Argument::Literal(!a))
            },
+           Instruction::RMEM(r,a)    => self.rmem(r,a),
+           Instruction::WMEM(a,b)    => self.wmem(a,b),
            Instruction::CALL(a)      => self.call(a),
            Instruction::RET          => self.ret(),
            Instruction::OUT(a)       => self.write_output(a),
            Instruction::NOOP         => Ok(VMState::RUN),
            _                         => Err(VMError::BadInstruction(instruction)) // any unrecognized opcode halts.
        }
+    }
+
+    fn rmem(&mut self, r: Register, a: Argument) -> VMResult {
+        let addr = Address::new(self.parse_argument(a));
+        if let Ok(mem) = self.read_memory(&addr) {
+            self.write_register(r, Argument::Literal(u15(mem)))
+        } else {
+            Err(VMError::InvalidMemoryAccess(addr))
+        }
+    }
+
+    fn wmem(&mut self, t: Argument, v: Argument) -> VMResult {
+        let target = Address::new(self.parse_argument(t));
+        let value = self.parse_argument(v);
+
+        self.write_memory(&target, value);
+
+        Ok(VMState::RUN)
     }
 
     /// Push the address of the next instruction to the stack, jump to given address
@@ -190,8 +210,6 @@ impl VM {
     ///
     /// Note that this is very similar to #pop, but does not error on StackUnderflow
     fn ret(&mut self) -> VMResult {
-        println!("DEBUG: Stack: {:?}", self.stack);
-        println!("DEBUG: IP: {:?}", self.instruction_pointer);
         match self.stack.pop() {
           Some(v) => self.jump(Argument::new(v)),
           None => Ok(VMState::HALT)
@@ -221,7 +239,6 @@ impl VM {
 
         return target > 0;
     }
-
 
     /// Jump to the address given by the argument.
     fn jump(&mut self, arg: Argument) -> VMResult {
@@ -279,6 +296,12 @@ impl VM {
         self.memory[address.value() as usize] = value;
     }
 
+    /// Read the value at memory address `location`
+    fn read_memory(&self, location: &Address) -> Result<u16, VMError> {
+        if location.is_invalid() { return Err(VMError::InvalidMemoryAccess(*location)); }
+        Ok(self.memory[location.to_usize()])
+    }
+
     fn current_instruction(&mut self) -> Result<Instruction, VMError> {
         let opcode = match self.advance() {
             Ok(o) => o,
@@ -303,13 +326,6 @@ impl VM {
             None => Err(VMError::MalformedInstruction(opcode_sequence))
         }
     }
-
-    /// Read the value at memory address `location`
-    fn read_memory(&self, location: &Address) -> Result<u16, VMError> {
-        if location.is_invalid() { return Err(VMError::InvalidMemoryAccess(*location)); }
-        Ok(self.memory[location.to_usize()])
-    }
-
 
     /// Get the current value at the instruction_pointer and advance the pointer forward
     /// one address.
@@ -1197,6 +1213,84 @@ mod tests {
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Err(VMError::StackUnderflow));
 
+            }
+        }
+
+        mod rmem {
+            use super::*;
+
+
+            #[test]
+            fn lit() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::RMEM(Register::R0, Argument::new(0)),
+                    Instruction::RMEM(Register::R1, Argument::new(1))
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 15);
+                assert_eq!(vm.registers[1], REGISTER_0);
+            }
+
+            #[test]
+            fn reg() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(1)),
+                    Instruction::RMEM(Register::R1, Argument::new(REGISTER_0))
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[1], REGISTER_0);
+            }
+        }
+
+        mod wmem {
+            use super::*;
+
+            #[test]
+            fn lit_lit() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::WMEM(Argument::new(1000), Argument::new(15)),
+                    Instruction::RMEM(Register::R1, Argument::new(1000))
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[1], 15);
+            }
+
+            #[test]
+            fn lit_reg() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(17)),
+                    Instruction::WMEM(Argument::new(1000), Argument::new(REGISTER_0)),
+                    Instruction::RMEM(Register::R1, Argument::new(1000))
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[1], 17);
+            }
+
+            #[test]
+            fn reg_reg() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(1000)),
+                    Instruction::SET(Register::R1, Argument::new(18)),
+                    Instruction::WMEM(Argument::new(REGISTER_0), Argument::new(REGISTER_1)),
+                    Instruction::RMEM(Register::R1, Argument::new(REGISTER_0))
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[1], 18);
             }
         }
 
