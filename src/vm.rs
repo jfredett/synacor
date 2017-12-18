@@ -103,6 +103,16 @@ impl VM {
            Instruction::HALT         => Ok(VMState::HALT),
            Instruction::JMP(a)       => self.jump(a),
            Instruction::SET(r,a)     => self.write_register(r, a),
+           Instruction::EQ(r, arg_a, arg_b)   => {
+               let a : u15 = u15(self.parse_argument(arg_a));
+               let b : u15 = u15(self.parse_argument(arg_b));
+
+               if a == b {
+                   self.write_register(r, Argument::new(1))
+               } else {
+                   self.write_register(r, Argument::new(0))
+               }
+           },
            Instruction::JT(a,b)      => {
                if self.check_true(a) { return self.jump(b); }
                Ok(VMState::RUN)
@@ -272,6 +282,71 @@ mod tests {
 
     mod instructions {
         use super::*;
+
+
+        mod eq {
+            use super::*;
+
+            #[test]
+            fn lit_lit() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::EQ(Register::R0, Argument::new(2), Argument::new(2))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 1);
+            }
+
+            #[test]
+            fn lit_reg() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R1, Argument::new(15)),
+                    Instruction::EQ(Register::R0, Argument::new(15), Argument::new(REGISTER_1))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 1);
+            }
+
+            #[test]
+            fn reg_lit() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R1, Argument::new(15)),
+                    Instruction::EQ(Register::R0, Argument::new(REGISTER_1), Argument::new(15))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 1);
+            }
+
+            #[test]
+            fn reg_reg() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R1, Argument::new(1)),
+                    Instruction::SET(Register::R0, Argument::new(2)),
+                    Instruction::EQ(Register::R0, Argument::new(REGISTER_1), Argument::new(REGISTER_0))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 0);
+            }
+        }
 
         mod add {
 
