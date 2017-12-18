@@ -50,9 +50,10 @@ impl VM {
         return self.instruction_pointer;
     }
 
-    pub fn load_program(&mut self, offset: Address, bin: &Vec<u16>) {
+    /// Given an offset and some bytecode, write the bytecode to machine memory.
+    pub fn load_program(&mut self, offset: Address, bytecode: &Vec<u16>) {
         let mut write_addr = offset;
-        for v in bin {
+        for v in bytecode {
             if write_addr.is_valid() {
                 self.write_memory(&write_addr, *v);
                 write_addr.next();
@@ -60,6 +61,16 @@ impl VM {
                 panic!("Attempted to load program, but ran out of memory.");
             }
         }
+    }
+
+    /// Given a series of raw instructions, compile them and write the resulting bytecode to memory
+    pub fn load_instructions(&mut self, offset: Address, instructions: &Vec<Instruction>) {
+        let mut program = vec![];
+        for i in instructions {
+            let mut bytecode = i.to_owned().to_u16_sequence();
+            program.append(&mut bytecode);
+        }
+        self.load_program(offset, &program);
     }
 
     pub fn run(&mut self, start_position: Address) -> VMResult {
@@ -269,11 +280,9 @@ mod tests {
             #[test]
             fn lit_lit_nowrap() {
                 let mut vm = VM::init();
-                let mut program = vec![];
-                program.append(&mut Instruction::ADD(Register::R0, Argument::new(2), Argument::new(2)).to_u16_sequence());
-
-                vm.load_program(Address::new(0), &program);
-
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::ADD(Register::R0, Argument::new(2), Argument::new(2))
+                ]);
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Ok(VMState::HALT));
 
@@ -283,11 +292,9 @@ mod tests {
             #[test]
             fn lit_lit_wrap() {
                 let mut vm = VM::init();
-                let mut program = vec![];
-                program.append(&mut Instruction::ADD(Register::R0, Argument::new(3), Argument::new(MODULUS - 3)).to_u16_sequence());
-
-                vm.load_program(Address::new(0), &program);
-
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::ADD(Register::R0, Argument::new(3), Argument::new(MODULUS - 3))
+                ]);
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Ok(VMState::HALT));
 
@@ -297,12 +304,10 @@ mod tests {
             #[test]
             fn lit_reg_nowrap() {
                 let mut vm = VM::init();
-                let mut program = vec![];
-                program.append(&mut Instruction::SET(Register::R1, Argument::new(15)).to_u16_sequence());
-                program.append(&mut Instruction::ADD(Register::R0, Argument::new(2), Argument::new(REGISTER_1)).to_u16_sequence());
-
-                vm.load_program(Address::new(0), &program);
-
+                vm.load_instructions(Address::new(0), &vec![
+                        Instruction::SET(Register::R1, Argument::new(15)),
+                        Instruction::ADD(Register::R0, Argument::new(2), Argument::new(REGISTER_1))
+                ]);
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Ok(VMState::HALT));
 
@@ -312,12 +317,10 @@ mod tests {
             #[test]
             fn lit_reg_wrap() {
                 let mut vm = VM::init();
-                let mut program = vec![];
-                program.append(&mut Instruction::SET(Register::R0, Argument::new(MODULUS-2)).to_u16_sequence());
-                program.append(&mut Instruction::ADD(Register::R0, Argument::new(2), Argument::new(REGISTER_0)).to_u16_sequence());
-
-                vm.load_program(Address::new(0), &program);
-
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(MODULUS-2)),
+                    Instruction::ADD(Register::R0, Argument::new(2), Argument::new(REGISTER_0)) 
+                ]);
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Ok(VMState::HALT));
 
@@ -327,12 +330,10 @@ mod tests {
             #[test]
             fn reg_lit_nowrap() {
                 let mut vm = VM::init();
-                let mut program = vec![];
-                program.append(&mut Instruction::SET(Register::R1, Argument::new(15)).to_u16_sequence());
-                program.append(&mut Instruction::ADD(Register::R0, Argument::new(REGISTER_1), Argument::new(2)).to_u16_sequence());
-
-                vm.load_program(Address::new(0), &program);
-
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R1, Argument::new(15)),
+                    Instruction::ADD(Register::R0, Argument::new(REGISTER_1), Argument::new(2)) 
+                ]);
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Ok(VMState::HALT));
 
@@ -342,12 +343,10 @@ mod tests {
             #[test]
             fn reg_lit_wrap() {
                 let mut vm = VM::init();
-                let mut program = vec![];
-                program.append(&mut Instruction::SET(Register::R0, Argument::new(MODULUS-2)).to_u16_sequence());
-                program.append(&mut Instruction::ADD(Register::R0, Argument::new(REGISTER_0), Argument::new(2)).to_u16_sequence());
-
-                vm.load_program(Address::new(0), &program);
-
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(MODULUS-2)),
+                    Instruction::ADD(Register::R0, Argument::new(REGISTER_0), Argument::new(2)) 
+                ]);
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Ok(VMState::HALT));
 
@@ -357,13 +356,11 @@ mod tests {
             #[test]
             fn reg_reg_nowrap() {
                 let mut vm = VM::init();
-                let mut program = vec![];
-                program.append(&mut Instruction::SET(Register::R1, Argument::new(15)).to_u16_sequence());
-                program.append(&mut Instruction::SET(Register::R0, Argument::new(2)).to_u16_sequence());
-                program.append(&mut Instruction::ADD(Register::R0, Argument::new(REGISTER_1), Argument::new(REGISTER_0)).to_u16_sequence());
-
-                vm.load_program(Address::new(0), &program);
-
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R1, Argument::new(15)),
+                    Instruction::SET(Register::R0, Argument::new(2)),
+                    Instruction::ADD(Register::R0, Argument::new(REGISTER_1), Argument::new(REGISTER_0)) 
+                ]);
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Ok(VMState::HALT));
 
@@ -373,13 +370,11 @@ mod tests {
             #[test]
             fn reg_reg_wrap() {
                 let mut vm = VM::init();
-                let mut program = vec![];
-                program.append(&mut Instruction::SET(Register::R0, Argument::new(MODULUS-2)).to_u16_sequence());
-                program.append(&mut Instruction::SET(Register::R1, Argument::new(2)).to_u16_sequence());
-                program.append(&mut Instruction::ADD(Register::R0, Argument::new(REGISTER_0), Argument::new(REGISTER_1)).to_u16_sequence());
-
-                vm.load_program(Address::new(0), &program);
-
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(MODULUS-2)),
+                    Instruction::SET(Register::R1, Argument::new(2)),
+                    Instruction::ADD(Register::R0, Argument::new(REGISTER_0), Argument::new(REGISTER_1)) 
+                ]);
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Ok(VMState::HALT));
 
@@ -394,11 +389,9 @@ mod tests {
             #[test]
             fn happy_lit() {
                 let mut vm = VM::init();
-                let mut program = vec![];
-                program.append(&mut Instruction::SET(Register::R0, Argument::new(15)).to_u16_sequence());
-
-                vm.load_program(Address::new(0), &program);
-
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(15)) 
+                ]);
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Ok(VMState::HALT));
 
@@ -408,12 +401,10 @@ mod tests {
             #[test]
             fn happy_reg() {
                 let mut vm = VM::init();
-                let mut program = vec![];
-                program.append(&mut Instruction::SET(Register::R0, Argument::new(15)).to_u16_sequence());
-                program.append(&mut Instruction::SET(Register::R1, Argument::new(REGISTER_0)).to_u16_sequence());
-
-                vm.load_program(Address::new(0), &program);
-
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(15)),
+                    Instruction::SET(Register::R1, Argument::new(REGISTER_0)) 
+                ]);
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Ok(VMState::HALT));
 
@@ -426,10 +417,10 @@ mod tests {
             use super::*;
 
             #[test]
-            fn happy_lit() {
+            fn lit() {
                 let mut vm = VM::init();
-                let program = Instruction::JMP(Argument::new(10)).to_u16_sequence();
-                vm.load_program(Address::new(0), &program);
+
+                vm.load_instructions(Address::new(0), &vec![Instruction::JMP(Argument::new(10))]);
 
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Ok(VMState::HALT));
@@ -442,16 +433,13 @@ mod tests {
             // further up. We might run into it with registers though, since SET isn't implemented
 
 
-            #[test] 
-            fn happy_reg() {
+            #[test]
+            fn reg() {
                 let mut vm = VM::init();
-                let mut program = vec![];
-
-                program.append(&mut Instruction::SET(Register::R0, Argument::new(15)).to_u16_sequence());
-                program.append(&mut Instruction::JMP(Argument::new(REGISTER_0)).to_u16_sequence());
-
-                vm.load_program(Address::new(0), &program);
-
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(15)),
+                    Instruction::JMP(Argument::new(REGISTER_0)) 
+                ]);
                 let result = vm.run(Address::new(0));
                 assert_eq!(result, Ok(VMState::HALT));
 
