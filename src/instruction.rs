@@ -1,7 +1,6 @@
 use std::fmt;
 
 use register::Register;
-use address::Address;
 use argument::Argument;
 
 
@@ -28,7 +27,7 @@ pub enum Instruction {
     CALL(Argument),
     RET,
     OUT(Argument),
-    IN(Address), // FIXME: this should take an argument
+    IN(Argument), // FIXME: this should take an argument
     NOOP
 }
 
@@ -117,7 +116,7 @@ impl Instruction {
             17 => Some(Instruction::CALL(Argument::new(seq[1]))),
             18 => Some(Instruction::RET),
             19 => Some(Instruction::OUT(Argument::new(seq[1]))),
-            20 => Some(Instruction::IN(Address::new(seq[1]))),
+            20 => Some(Instruction::IN(Argument::new(seq[1]))),
             21 => Some(Instruction::NOOP),
             _ => None
         }
@@ -617,9 +616,15 @@ mod tests {
             use super::*;
 
             #[test]
-            fn test() { 
-                let s = format!("{}", Instruction::IN(Address::new(123)));
-                assert_eq!(s, "IN @123");
+            fn lit() {
+                let s = format!("{}", Instruction::IN(Argument::new(123)));
+                assert_eq!(s, "IN 123");
+            }
+
+            #[test]
+            fn reg() {
+                let s = format!("{}", Instruction::IN(Argument::new(REGISTER_0)));
+                assert_eq!(s, "IN R0");
             }
         }
 
@@ -1099,9 +1104,15 @@ mod tests {
             use super::*;
 
             #[test]
-            fn call() {
-                let s = Instruction::IN(Address::new(123));
+            fn lit() {
+                let s = Instruction::IN(Argument::new(123));
                 assert_eq!(s.to_u16_sequence(), vec![20, 123]);
+            }
+
+            #[test]
+            fn reg() {
+                let s = Instruction::IN(Argument::new(REGISTER_5));
+                assert_eq!(s.to_u16_sequence(), vec![20, REGISTER_5]);
             }
         }
 
@@ -1597,9 +1608,16 @@ mod tests {
             use super::*;
 
             #[test]
-            fn in_val() {
-                let p = Instruction::IN(Address::new(123));
+            fn lit() {
+                let p = Instruction::IN(Argument::new(123));
                 let h = Instruction::from_u16_sequence(&vec![20, 123]).unwrap();
+                assert_eq!(p, h);
+            }
+
+            #[test]
+            fn reg() {
+                let p = Instruction::IN(Argument::new(REGISTER_4));
+                let h = Instruction::from_u16_sequence(&vec![20, REGISTER_4]).unwrap();
                 assert_eq!(p, h);
             }
         }

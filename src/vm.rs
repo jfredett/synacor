@@ -1,4 +1,6 @@
 use std::convert::From;
+use std::io;
+use std::io::Read;
 
 use u15::u15;
 use address::Address;
@@ -6,7 +8,6 @@ use argument::Argument;
 use register::Register;
 use instruction::Instruction;
 use constants::*;
-
 
 pub struct VM {
     instruction_pointer: Address,
@@ -25,7 +26,6 @@ pub enum VMState {
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum VMError {
     BadOpcode(u16),
-    BadInstruction(Instruction),
     InvalidMemoryAccess(Address),
     MalformedInstruction(Vec<u16>),
     InvalidCharacterArgument(Argument),
@@ -102,10 +102,9 @@ impl VM {
     fn execute_instruction(&mut self, instruction: Instruction) -> VMResult {
        match instruction {
            Instruction::HALT         => Ok(VMState::HALT),
+           Instruction::SET(r,a)     => self.write_register(r, a),
            Instruction::PUSH(arg)    => { self.push(arg); Ok(VMState::RUN) } // push can never fail
            Instruction::POP(r)       => self.pop(r),
-           Instruction::JMP(a)       => self.jump(a),
-           Instruction::SET(r,a)     => self.write_register(r, a),
            Instruction::EQ(r, arg_a, arg_b)   => {
                let a : u15 = u15(self.parse_argument(arg_a));
                let b : u15 = u15(self.parse_argument(arg_b));
@@ -126,6 +125,7 @@ impl VM {
                    self.write_register(r, Argument::new(0))
                }
            },
+           Instruction::JMP(a)       => self.jump(a),
            Instruction::JT(a,b)      => {
                if self.check_true(a) { return self.jump(b); }
                Ok(VMState::RUN)
@@ -174,9 +174,27 @@ impl VM {
            Instruction::CALL(a)      => self.call(a),
            Instruction::RET          => self.ret(),
            Instruction::OUT(a)       => self.write_output(a),
+           Instruction::IN(a)        => self.read_input(a),
            Instruction::NOOP         => Ok(VMState::RUN),
-           _                         => Err(VMError::BadInstruction(instruction)) // any unrecognized opcode halts.
        }
+    }
+
+    fn read_input(&mut self, a: Argument) -> VMResult {
+        let mut stdin = io::stdin();
+        let mut buf : [u8; 1] = [0; 1];
+
+        stdin.read_exact(&mut buf);
+
+        match a {
+            Argument::Literal(addr) => {
+                let target = Address::new(addr.0);
+                self.write_memory(&target, buf[0] as u16);
+                Ok(VMState::RUN)
+            },
+            Argument::Register(r) => {
+                self.write_register(r, Argument::new(buf[0] as u16))
+            }
+        }
     }
 
     fn rmem(&mut self, r: Register, a: Argument) -> VMResult {
