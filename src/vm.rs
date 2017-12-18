@@ -585,30 +585,36 @@ mod tests {
     mod step {
         use super::*;
 
-        // XXX: Disabled while I run the given program with just the example instructions installed
-        //#[test]
-        //fn step() {
-            //let mut vm = loaded_vm();
+        #[test]
+        fn step() {
+            let mut vm = loaded_vm();
 
-            //// force the instruction pointer to the beginning of the program
-            //vm.instruction_pointer = Address::new(1000);
+            // force the instruction pointer to the beginning of the program
+            vm.instruction_pointer = Address::new(1000);
 
-            //assert!(vm.stack.is_empty());
-            //assert_eq!(vm.registers[0], 0);
-            //assert_eq!(vm.registers[1], 0);
+            assert!(vm.stack.is_empty());
+            assert_eq!(vm.registers[0], 0);
+            assert_eq!(vm.registers[1], 0);
 
-            //let result = vm.step();
+            let mut result = vm.step();
 
-            //assert_eq!(result, Ok(VMState::HALT));
+            assert_eq!(result, Ok(VMState::RUN));
 
-            //assert!(vm.stack.is_empty());
-            //assert_eq!(vm.registers[0], 4);
-            //assert_eq!(vm.registers[1], 0);
+            assert!(vm.stack.is_empty());
+            assert_eq!(vm.registers[0], 4);
+            assert_eq!(vm.registers[1], 0);
 
-            ////vm.step();
+            result = vm.step();
+            // FIXME: this should output the ascii value '4' to an output stream, since I don't
+            // have the output stream injected yet, no good way to test for that.
+            assert_eq!(result, Ok(VMState::RUN));
 
-            //// this should output the ascii value '4' to an output stream
-        //}
+            assert_eq!(vm.instruction_pointer, Address::new(1006));
+
+            result = vm.step();
+            assert_eq!(result, Ok(VMState::HALT));
+            assert_eq!(vm.instruction_pointer, Address::new(1007));
+        }
 
         #[test]
         fn advance() {
