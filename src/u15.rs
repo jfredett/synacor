@@ -42,7 +42,12 @@ macro_rules! binop_trait {
             type Output = u15;
 
             #[inline]
-            fn $method(self, rhs: $T) -> u15 { u15($trait::$method(self.0, rhs) % MODULUS) }
+            fn $method(self, rhs: $T) -> u15 {
+                let a = self.0 as u64;
+                let b = rhs as u64;
+                let res = $trait::$method(a, b) % (MODULUS as u64);
+                u15(res as u16)
+            }
         }
     };
     // this is a crappy hack to unwrap the newtype, but whatever.
@@ -51,7 +56,12 @@ macro_rules! binop_trait {
             type Output = u15;
 
             #[inline]
-            fn $method(self, rhs: $T) -> u15 { u15($trait::$method(self.0, rhs.0) % MODULUS) }
+            fn $method(self, rhs: $T) -> u15 {
+                let a = self.0 as u64;
+                let b = rhs.0 as u64;
+                let res = $trait::$method(a, b) % (MODULUS as u64);
+                u15(res as u16)
+            }
         }
     }
 

@@ -140,6 +140,12 @@ impl VM {
 
                self.write_register(r, Argument::Literal(a + b))
            },
+           Instruction::MULT(r, arg_a, arg_b)   => {
+               let a : u15 = u15(self.parse_argument(arg_a));
+               let b : u15 = u15(self.parse_argument(arg_b));
+
+               self.write_register(r, Argument::Literal(a * b))
+           },
            Instruction::AND(r, arg_a, arg_b)   => {
                let a : u15 = u15(self.parse_argument(arg_a));
                let b : u15 = u15(self.parse_argument(arg_b));
@@ -741,6 +747,114 @@ mod tests {
                 assert_eq!(result, Ok(VMState::HALT));
 
                 assert_eq!(vm.registers[0], 0);
+            }
+        }
+
+        mod mult {
+            use super::*;
+
+            #[test]
+            fn lit_lit_nowrap() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::MULT(Register::R0, Argument::new(2), Argument::new(2))
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 4);
+            }
+
+            #[test]
+            fn lit_lit_wrap() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::MULT(Register::R0, Argument::new(2), Argument::new(MODULUS - 1))
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], MODULUS - 2);
+            }
+
+            #[test]
+            fn lit_reg_nowrap() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                        Instruction::SET(Register::R1, Argument::new(15)),
+                        Instruction::MULT(Register::R0, Argument::new(2), Argument::new(REGISTER_1))
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 30);
+            }
+
+            #[test]
+            fn lit_reg_wrap() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(MODULUS-1)),
+                    Instruction::MULT(Register::R0, Argument::new(2), Argument::new(REGISTER_0)) 
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], MODULUS - 2);
+            }
+
+            #[test]
+            fn reg_lit_nowrap() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R1, Argument::new(15)),
+                    Instruction::MULT(Register::R0, Argument::new(REGISTER_1), Argument::new(2)) 
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 30);
+            }
+
+            #[test]
+            fn reg_lit_wrap() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(MODULUS-1)),
+                    Instruction::MULT(Register::R0, Argument::new(REGISTER_0), Argument::new(2)) 
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], MODULUS - 2);
+            }
+
+            #[test]
+            fn reg_reg_nowrap() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R1, Argument::new(15)),
+                    Instruction::SET(Register::R0, Argument::new(2)),
+                    Instruction::MULT(Register::R0, Argument::new(REGISTER_1), Argument::new(REGISTER_0)) 
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 30);
+            }
+
+            #[test]
+            fn reg_reg_wrap() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(MODULUS-2)),
+                    Instruction::SET(Register::R1, Argument::new(2)),
+                    Instruction::MULT(Register::R0, Argument::new(REGISTER_0), Argument::new(REGISTER_1)) 
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], MODULUS - 4);
             }
         }
 
