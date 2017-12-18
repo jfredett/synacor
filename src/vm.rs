@@ -130,7 +130,7 @@ impl VM {
             Argument::Register(r) => self.read_register(r)
         };
 
-        return target == 1;
+        return target > 0;
     }
 
 
@@ -445,6 +445,138 @@ mod tests {
 
                 // it goes to @16 because it has to read the halt instruction at @15.
                 assert_eq!(vm.instruction_pointer, Address::new(16));
+            }
+        }
+
+        mod jt {
+            use super::*;
+
+            // why you would ever need this is beyond me, maybe for self modifying code?
+            #[test]
+            fn lit_lit() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::JT(Argument::new(1), Argument::new(10))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.instruction_pointer, Address::new(11));
+            }
+
+            #[test]
+            fn reg_lit() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::EQ(Register::R0, Argument::new(2), Argument::new(2)),
+                    Instruction::JT(Argument::new(REGISTER_0), Argument::new(10))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.instruction_pointer, Address::new(11));
+            }
+
+            // same as lit_lit, why?
+            #[test]
+            fn lit_reg() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R6, Argument::new(10)),
+                    Instruction::JT(Argument::new(0), Argument::new(REGISTER_6))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.instruction_pointer, Address::new(7));
+            }
+
+            #[test]
+            fn reg_reg() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::EQ(Register::R0, Argument::new(2), Argument::new(2)),
+                    Instruction::SET(Register::R6, Argument::new(10)),
+                    Instruction::JT(Argument::new(REGISTER_0), Argument::new(REGISTER_6))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.instruction_pointer, Address::new(11));
+            }
+        }
+
+        mod jf {
+            use super::*;
+
+            // why you would ever need this is beyond me, maybe for self modifying code?
+            #[test]
+            fn lit_lit() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::JF(Argument::new(0), Argument::new(10))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.instruction_pointer, Address::new(11));
+            }
+
+            #[test]
+            fn reg_lit() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::EQ(Register::R0, Argument::new(3), Argument::new(2)),
+                    Instruction::JF(Argument::new(REGISTER_0), Argument::new(10))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.instruction_pointer, Address::new(11));
+            }
+
+            // same as lit_lit, why?
+            #[test]
+            fn lit_reg() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R6, Argument::new(10)),
+                    Instruction::JF(Argument::new(10), Argument::new(REGISTER_6))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.instruction_pointer, Address::new(7));
+            }
+
+            #[test]
+            fn reg_reg() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::EQ(Register::R0, Argument::new(3), Argument::new(2)),
+                    Instruction::SET(Register::R6, Argument::new(10)),
+                    Instruction::JF(Argument::new(REGISTER_0), Argument::new(REGISTER_6))
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.instruction_pointer, Address::new(11));
             }
         }
 
