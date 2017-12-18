@@ -1,6 +1,6 @@
 use std::convert::From;
 
-//use u15::u15;
+use u15::u15;
 use address::Address;
 use argument::Argument;
 use register::Register;
@@ -100,11 +100,18 @@ impl VM {
                if !self.check_true(a) { return self.jump(b); }
                Ok(VMState::RUN)
            }
-           Instruction::NOOP         => Ok(VMState::RUN),
+           Instruction::ADD(r,arg_a,arg_b)   => {
+               let a : u15 = u15(self.parse_argument(arg_a));
+               let b : u15 = u15(self.parse_argument(arg_b));
+
+               self.write_register(r, Argument::Literal(a + b))
+           },
            Instruction::OUT(a)       => self.write_output(a),
+           Instruction::NOOP         => Ok(VMState::RUN),
            _                         => Err(VMError::BadInstruction(instruction)) // any unrecognized opcode halts.
        }
     }
+
 
     fn check_true(&self, arg: Argument) -> bool {
         let target = match arg {
@@ -254,6 +261,131 @@ mod tests {
 
     mod instructions {
         use super::*;
+
+        mod add {
+
+            use super::*;
+
+            #[test]
+            fn lit_lit_nowrap() {
+                let mut vm = VM::init();
+                let mut program = vec![];
+                program.append(&mut Instruction::ADD(Register::R0, Argument::new(2), Argument::new(2)).to_u16_sequence());
+
+                vm.load_program(Address::new(0), &program);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 4);
+            }
+
+            #[test]
+            fn lit_lit_wrap() {
+                let mut vm = VM::init();
+                let mut program = vec![];
+                program.append(&mut Instruction::ADD(Register::R0, Argument::new(3), Argument::new(MODULUS - 3)).to_u16_sequence());
+
+                vm.load_program(Address::new(0), &program);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 0);
+            }
+
+            #[test]
+            fn lit_reg_nowrap() {
+                let mut vm = VM::init();
+                let mut program = vec![];
+                program.append(&mut Instruction::SET(Register::R1, Argument::new(15)).to_u16_sequence());
+                program.append(&mut Instruction::ADD(Register::R0, Argument::new(2), Argument::new(REGISTER_1)).to_u16_sequence());
+
+                vm.load_program(Address::new(0), &program);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 17);
+            }
+
+            #[test]
+            fn lit_reg_wrap() {
+                let mut vm = VM::init();
+                let mut program = vec![];
+                program.append(&mut Instruction::SET(Register::R0, Argument::new(MODULUS-2)).to_u16_sequence());
+                program.append(&mut Instruction::ADD(Register::R0, Argument::new(2), Argument::new(REGISTER_0)).to_u16_sequence());
+
+                vm.load_program(Address::new(0), &program);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 0);
+            }
+
+            #[test]
+            fn reg_lit_nowrap() {
+                let mut vm = VM::init();
+                let mut program = vec![];
+                program.append(&mut Instruction::SET(Register::R1, Argument::new(15)).to_u16_sequence());
+                program.append(&mut Instruction::ADD(Register::R0, Argument::new(REGISTER_1), Argument::new(2)).to_u16_sequence());
+
+                vm.load_program(Address::new(0), &program);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 17);
+            }
+
+            #[test]
+            fn reg_lit_wrap() {
+                let mut vm = VM::init();
+                let mut program = vec![];
+                program.append(&mut Instruction::SET(Register::R0, Argument::new(MODULUS-2)).to_u16_sequence());
+                program.append(&mut Instruction::ADD(Register::R0, Argument::new(REGISTER_0), Argument::new(2)).to_u16_sequence());
+
+                vm.load_program(Address::new(0), &program);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 0);
+            }
+
+            #[test]
+            fn reg_reg_nowrap() {
+                let mut vm = VM::init();
+                let mut program = vec![];
+                program.append(&mut Instruction::SET(Register::R1, Argument::new(15)).to_u16_sequence());
+                program.append(&mut Instruction::SET(Register::R0, Argument::new(2)).to_u16_sequence());
+                program.append(&mut Instruction::ADD(Register::R0, Argument::new(REGISTER_1), Argument::new(REGISTER_0)).to_u16_sequence());
+
+                vm.load_program(Address::new(0), &program);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 17);
+            }
+
+            #[test]
+            fn reg_reg_wrap() {
+                let mut vm = VM::init();
+                let mut program = vec![];
+                program.append(&mut Instruction::SET(Register::R0, Argument::new(MODULUS-2)).to_u16_sequence());
+                program.append(&mut Instruction::SET(Register::R1, Argument::new(2)).to_u16_sequence());
+                program.append(&mut Instruction::ADD(Register::R0, Argument::new(REGISTER_0), Argument::new(REGISTER_1)).to_u16_sequence());
+
+                vm.load_program(Address::new(0), &program);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.registers[0], 0);
+            }
+        }
 
         mod set {
             use super::*;
