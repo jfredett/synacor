@@ -23,12 +23,12 @@ pub enum Instruction {
     AND(Register, Argument, Argument),
     OR(Register, Argument, Argument),
     NOT(Register, Argument),
-    RMEM(Register, Address),
-    WMEM(Address, Argument),
-    CALL(Address),
+    RMEM(Register, Address), // FIXME: This should be register/arg
+    WMEM(Address, Argument), // FIXME: This should be an Arg/Arg, not Add/Arg
+    CALL(Argument),
     RET,
-    OUT(Argument), // XXX: this should take an argument, not a u8, per the example program
-    IN(Address),
+    OUT(Argument),
+    IN(Address), // FIXME: this should take an argument
     NOOP
 }
 
@@ -114,7 +114,7 @@ impl Instruction {
             14 => Some(Instruction::NOT(Register::new(seq[1]), Argument::new(seq[2]))),
             15 => Some(Instruction::RMEM(Register::new(seq[1]), Address::new(seq[2]))),
             16 => Some(Instruction::WMEM(Address::new(seq[1]), Argument::new(seq[2]))),
-            17 => Some(Instruction::CALL(Address::new(seq[1]))),
+            17 => Some(Instruction::CALL(Argument::new(seq[1]))),
             18 => Some(Instruction::RET),
             19 => Some(Instruction::OUT(Argument::new(seq[1]))),
             20 => Some(Instruction::IN(Address::new(seq[1]))),
@@ -557,9 +557,15 @@ mod tests {
             use super::*;
 
             #[test]
-            fn test() { 
-                let s = format!("{}", Instruction::CALL(Address::new(1231)));
-                assert_eq!(s, "CALL @1231");
+            fn lit() { 
+                let s = format!("{}", Instruction::CALL(Argument::new(1231)));
+                assert_eq!(s, "CALL 1231");
+            }
+
+            #[test]
+            fn reg() { 
+                let s = format!("{}", Instruction::CALL(Argument::new(REGISTER_0)));
+                assert_eq!(s, "CALL R0");
             }
         }
 
@@ -1015,9 +1021,15 @@ mod tests {
             use super::*;
 
             #[test]
-            fn call() {
-                let s = Instruction::CALL(Address::new(123));
+            fn lit() {
+                let s = Instruction::CALL(Argument::new(123));
                 assert_eq!(s.to_u16_sequence(), vec![17, 123]);
+            }
+
+            #[test]
+            fn reg() {
+                let s = Instruction::CALL(Argument::new(REGISTER_0));
+                assert_eq!(s.to_u16_sequence(), vec![17, REGISTER_0]);
             }
         }
 
@@ -1482,9 +1494,16 @@ mod tests {
             use super::*;
 
             #[test]
-            fn call() {
-                let p = Instruction::CALL(Address::new(123));
+            fn lit() {
+                let p = Instruction::CALL(Argument::new(123));
                 let h = Instruction::from_u16_sequence(&vec![17, 123]).unwrap();
+                assert_eq!(p, h);
+            }
+
+            #[test]
+            fn reg() {
+                let p = Instruction::CALL(Argument::new(REGISTER_0));
+                let h = Instruction::from_u16_sequence(&vec![17, REGISTER_0]).unwrap();
                 assert_eq!(p, h);
             }
         }

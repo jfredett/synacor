@@ -102,7 +102,7 @@ impl VM {
     fn execute_instruction(&mut self, instruction: Instruction) -> VMResult {
        match instruction {
            Instruction::HALT         => Ok(VMState::HALT),
-           Instruction::PUSH(arg)    => self.push(arg),
+           Instruction::PUSH(arg)    => { self.push(arg); Ok(VMState::RUN) } // push can never fail
            Instruction::POP(r)       => self.pop(r),
            Instruction::JMP(a)       => self.jump(a),
            Instruction::SET(r,a)     => self.write_register(r, a),
@@ -129,11 +129,11 @@ impl VM {
            Instruction::JT(a,b)      => {
                if self.check_true(a) { return self.jump(b); }
                Ok(VMState::RUN)
-           }
+           },
            Instruction::JF(a,b)      => {
                if !self.check_true(a) { return self.jump(b); }
                Ok(VMState::RUN)
-           }
+           },
            Instruction::ADD(r, arg_a, arg_b)   => {
                let a : u15 = u15(self.parse_argument(arg_a));
                let b : u15 = u15(self.parse_argument(arg_b));
@@ -157,10 +157,33 @@ impl VM {
 
                self.write_register(r, Argument::Literal(!a))
            },
+           Instruction::CALL(a)      => self.call(a),
+           Instruction::RET          => self.ret(),
            Instruction::OUT(a)       => self.write_output(a),
            Instruction::NOOP         => Ok(VMState::RUN),
            _                         => Err(VMError::BadInstruction(instruction)) // any unrecognized opcode halts.
        }
+    }
+
+    /// Push the address of the next instruction to the stack, jump to given address
+    fn call(&mut self, a: Argument) -> VMResult {
+        // get the position of the next instruction
+        let cur_ptr = self.instruction_pointer.to_u16();
+        self.push(Argument::new(cur_ptr));
+        self.jump(a)
+    }
+
+    /// Pop the top of the stack, jump to the address attained.
+    /// If empty, halt.
+    ///
+    /// Note that this is very similar to #pop, but does not error on StackUnderflow
+    fn ret(&mut self) -> VMResult {
+        println!("DEBUG: Stack: {:?}", self.stack);
+        println!("DEBUG: IP: {:?}", self.instruction_pointer);
+        match self.stack.pop() {
+          Some(v) => self.jump(Argument::new(v)),
+          None => Ok(VMState::HALT)
+        }
     }
 
     /// Pop a value off the stack, put it in given register
@@ -172,13 +195,12 @@ impl VM {
     }
 
     /// Push the given argument onto the stack
-    fn push(&mut self, arg: Argument) -> VMResult {
+    fn push(&mut self, arg: Argument) {
         let v = self.parse_argument(arg);
         self.stack.push(v);
-
-        Ok(VMState::RUN)
     }
 
+    /// Checks if the argument is non-zero
     fn check_true(&self, arg: Argument) -> bool {
         let target = match arg {
             Argument::Literal(v) => v.0,
@@ -327,7 +349,6 @@ mod tests {
 
     mod instructions {
         use super::*;
-
 
         mod gt {
             use super::*;
@@ -500,6 +521,7 @@ mod tests {
                 assert_eq!(u15(vm.registers[0]), !u15(15));
             }
         }
+
         mod or {
             use super::*;
 
@@ -1002,6 +1024,82 @@ mod tests {
             }
         }
 
+        mod call {
+            use super::*;
+
+            #[test]
+            fn lit() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![Instruction::CALL(Argument::new(10))]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.instruction_pointer, Address::new(11));
+                assert_eq!(vm.stack[0], 2);
+            }
+
+            #[test]
+            fn reg() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(15)),
+                    Instruction::CALL(Argument::new(REGISTER_0)) 
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.instruction_pointer, Address::new(16));
+                assert_eq!(vm.stack[0], 5);
+            }
+        }
+
+        mod ret {
+            use super::*;
+
+            #[test]
+            fn lit() {
+                let mut vm = VM::init();
+
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::CALL(Argument::new(5)),
+                    Instruction::HALT,
+                    Instruction::NOOP,
+                    Instruction::NOOP,
+                    Instruction::NOOP,
+                    Instruction::NOOP,
+                    Instruction::NOOP,
+                    Instruction::NOOP,
+                    Instruction::NOOP,
+                    Instruction::NOOP,
+                    Instruction::RET
+                ]);
+
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.instruction_pointer, Address::new(3));
+                assert!(vm.stack.is_empty());
+            }
+
+            #[test]
+            fn reg() {
+                let mut vm = VM::init();
+                vm.load_instructions(Address::new(0), &vec![
+                    Instruction::SET(Register::R0, Argument::new(6)), // 3 => @2
+                    Instruction::CALL(Argument::new(REGISTER_0)),     // 2 => @4
+                    Instruction::HALT, // @5
+                    Instruction::NOOP, // @6
+                    Instruction::RET   // @7
+                ]);
+                let result = vm.run(Address::new(0));
+                assert_eq!(result, Ok(VMState::HALT));
+
+                assert_eq!(vm.instruction_pointer, Address::new(6));
+                assert!(vm.stack.is_empty());
+            }
+        }
     }
 
     mod step {
