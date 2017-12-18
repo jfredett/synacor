@@ -111,7 +111,7 @@ impl VM {
                if !self.check_true(a) { return self.jump(b); }
                Ok(VMState::RUN)
            }
-           Instruction::ADD(r,arg_a,arg_b)   => {
+           Instruction::ADD(r, arg_a, arg_b)   => {
                let a : u15 = u15(self.parse_argument(arg_a));
                let b : u15 = u15(self.parse_argument(arg_b));
 
@@ -387,7 +387,7 @@ mod tests {
 
 
             #[test]
-            fn happy_lit() {
+            fn lit() {
                 let mut vm = VM::init();
                 vm.load_instructions(Address::new(0), &vec![
                     Instruction::SET(Register::R0, Argument::new(15)) 
@@ -399,7 +399,7 @@ mod tests {
             }
 
             #[test]
-            fn happy_reg() {
+            fn reg() {
                 let mut vm = VM::init();
                 vm.load_instructions(Address::new(0), &vec![
                     Instruction::SET(Register::R0, Argument::new(15)),
